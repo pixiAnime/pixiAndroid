@@ -1,0 +1,70 @@
+name: Release
+
+# Push a `v*` tag (or run it by hand from the Actions tab) and the APK is
+# built and published as a GitHub Release.
+#
+# Secrets (optional — without them the APK is signed with the committed
+# debug key, which still installs and upgrades local debug builds):
+#   RELEASE_KEYSTORE_B64   `base64 -w0 android/app/release.keystore`
+#   RELEASE_STORE_PASSWORD / RELEASE_KEY_ALIAS / RELEASE_KEY_PASSWORD
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install the pinned NDK and CMake
+        run: sdkmanager "ndk;27.1.12297006" "cmake;3.22.1"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unpack the release key
+        env:
+          RELEASE_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$RELEASE_KEYSTORE_B64" ]; then
+            echo "$RELEASE_KEYSTORE_B64" | base64 -d > android/app/release.keystore
+          else
+            echo "::notice::RELEASE_KEYSTORE_B64 is not set — signing with the debug key"
+          fi
+
+      - name: Build the release APK
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: cd android && ./gradlew assembleRelease
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          case "$TAG" in v*) ;; *) TAG="v$(sed -n 's/.*versionName "\(.*\)"/\1/p' android/app/build.gradle)" ;; esac
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          NAME="pixiAndroid-$TAG.apk"
+          cp "$APK" "/tmp/$NAME"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "/tmp/$NAME" --clobber
+          else
+            gh release create "$TAG" "/tmp/$NAME" --title "pixiAndroid $TAG" --generate-notes
+          fi
