@@ -55,9 +55,12 @@ react {
 }
 
 /**
- * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ * Run R8 on release builds: shrinks/optimises the dex and lets the resource
+ * shrinker drop unused drawables (measured 22.1MB of dex before, ~10MB less
+ * after). Classes the native side looks up by name are frozen in
+ * `proguard-rules.pro` — keep that file in step when adding JNI code.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -104,6 +107,8 @@ android {
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
+            // Requires minifyEnabled: drops drawables/layouts no code references.
+            shrinkResources enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
