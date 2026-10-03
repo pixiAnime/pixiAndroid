@@ -87,8 +87,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // versionCode MUST increase or `pm install -r` refuses the upgrade:
         // Android treats a lower-or-equal code as the same build.
-        versionCode 35
-        versionName "0.1.35"
+        versionCode 36
+        versionName "0.1.36"
     }
     signingConfigs {
         debug {
