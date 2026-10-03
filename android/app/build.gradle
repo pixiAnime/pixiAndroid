@@ -97,15 +97,28 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // The release key comes from CI env vars (GitHub secrets) or from
+            // android/keystore.properties, which is gitignored. `def` below is
+            // a local variable of this closure — no extra gradle plumbing.
+            def props = new Properties()
+            def propsFile = rootProject.file('keystore.properties')
+            if (propsFile.exists()) propsFile.withInputStream { props.load(it) }
+            storeFile file(System.getenv('RELEASE_STORE_FILE') ?: props.getProperty('storeFile', 'release.keystore'))
+            storePassword System.getenv('RELEASE_STORE_PASSWORD') ?: props.getProperty('storePassword')
+            keyAlias System.getenv('RELEASE_KEY_ALIAS') ?: props.getProperty('keyAlias', 'pixi')
+            keyPassword System.getenv('RELEASE_KEY_PASSWORD') ?: props.getProperty('keyPassword')
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // No release key configured → sign with the committed debug key,
+            // which is byte-identical on every machine, so the APK still
+            // installs over (and upgrades) local debug builds.
+            signingConfig signingConfigs.release.storePassword ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             // Requires minifyEnabled: drops drawables/layouts no code references.
             shrinkResources enableProguardInReleaseBuilds
