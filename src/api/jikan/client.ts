@@ -6,6 +6,11 @@
  *   (~2.5 req/s vs Jikan's 3 req/s), 429 → queue-wide cool-down + 2s
  *   backoff, 5xx/network → 1s, max 2 attempts — after that the AniList
  *   fallback (src/api/fallback.ts) takes over; other 4xx fail fast;
+ * - **every request is cut at 6s** (src/api/deadline.ts) and a timeout goes
+ *   straight to the fallback instead of buying a second attempt: RN's fetch
+ *   has no deadline of its own, and 2 x OkHttp's ~12s window is what left a
+ *   cold start sitting on "Connecting…" while AniList could have answered in
+ *   0.4s (see that module for the measurement);
  * - errors are ApiError (src/api/errors.ts) — shared with the fallback;
  * - cancellation (StrictMode remount / navigation) throws ApiError('aborted')
  *   immediately — never backs off, never retries.
@@ -16,6 +21,7 @@
  */
 import { config } from '@/config'
 import { ApiError } from '@/api/errors'
+import { fetchWithDeadline } from '@/api/deadline'
 
 export type JikanQuery = Record<string, string | number | boolean | undefined | null>
 
@@ -154,11 +160,17 @@ export async function jikanFetch<T>(
     let res: Response
     try {
       await acquireSlot(signal)
-      res = await fetch(url, { signal })
+      res = await fetchWithDeadline(url, undefined, { signal })
     } catch (err) {
-      // Scheduler cancellation (StrictMode unmount / navigation) — not a failure:
-      // never back off, never retry — React Query restarts on re-subscribe.
-      if (err instanceof ApiError) throw err
+      // Scheduler cancellation (StrictMode unmount / navigation) and the
+      // request deadline both arrive as ApiError — neither is a transport
+      // failure to burn the second attempt on: the first hands control back
+      // to React Query, the timeout straight to `withFallback`, which is the
+      // whole point of cutting the request at all.
+      if (err instanceof ApiError) {
+        dbg(`LADDER EXIT attempt=${attempt} kind=${err.kind} ${err.message}`)
+        throw err
+      }
       if (signal?.aborted || isAbortError(err)) {
         dbg(`ABORT@fetch attempt=${attempt}`)
         throw new ApiError('aborted', 'Request cancelled')
