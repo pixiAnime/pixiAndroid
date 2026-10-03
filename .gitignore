@@ -76,3 +76,6 @@ yarn-error.log
 
 # Local tool scratch space (holds a machine-local project id only)
 .freebuff/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
