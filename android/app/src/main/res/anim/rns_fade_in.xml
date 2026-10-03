@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 fade, screen that is ARRIVING (push: the new screen; pop: the one
+  revealed underneath).
+
+  Same file name as a react-native-screens resource: an app resource replaces
+  the library's one when Gradle merges resources, so react-native-screens
+  (4.28.0, pinned in package.json) runs this without being patched. The stock
+  file is a plain 150ms crossfade that runs in parallel with the outgoing one.
+
+  M3 values, from MaterialFadeThrough / motionDurationLong1:
+    duration  300ms, alpha and scale on the same clock
+    easing    emphasized, cubic-bezier(0.2, 0, 0, 1) -> ../interpolator/pixi_emphasized.xml
+    scale     comes in from 0.92 of full size (ScaleProvider's incomingStartScale)
+
+  ## Why there is no startOffset
+
+  The literal fade-through split (MDC's FADE_THROUGH_THRESHOLD, 0.35) held this
+  screen at alpha 0 for the first 105ms, so it only appeared once the outgoing
+  one was already gone. Measured on the emphasized curve the outgoing screen is
+  ~90% transparent by 56ms, which left a ~50ms frame of *nothing* between the
+  two, and a tap that visibly did nothing for the first tenth of a second — it
+  read as "the page opens slowly", on exactly the two screens that switch most
+  (Home, Browse). Starting together turns the gap into a crossfade: content is
+  ~60% in after 60ms and 90% in by 150ms, on the same 300ms Material budget.
+
+  The scale is about the centre and `colors.background` is the same #101214 as
+  `colors.surface`, so the ring it briefly opens around the content is invisible.
+
+  Assigned to `animation: 'fade'` by src/navigation/RootNavigator.tsx.
+
+  Re-check this file when react-native-screens is bumped: a qualifier-specific
+  variant (anim-v33/…) or a rename would stop this override winning, silently.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <alpha
+        android:fromAlpha="0"
+        android:toAlpha="1"
+        android:startOffset="0"
+        android:duration="300"
+        android:interpolator="@interpolator/pixi_emphasized" />
+    <scale
+        android:fromXScale="0.92"
+        android:toXScale="1"
+        android:fromYScale="0.92"
+        android:toYScale="1"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:startOffset="0"
+        android:duration="300"
+        android:interpolator="@interpolator/pixi_emphasized" />
+</set>

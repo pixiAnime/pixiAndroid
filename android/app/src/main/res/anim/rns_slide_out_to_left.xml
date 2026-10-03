@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 shared axis (X), screen that is LEAVING on a push — the list
+  under an AnimeDetail/Watch that has just been pushed on top of it.
+
+  It shifts 30dp the other way (8% of the parent, see
+  rns_slide_in_from_right.xml for why that is a percentage) and is fully gone
+  at 105ms, so the arriving screen takes over from it rather than crossing it.
+
+  Replaces react-native-screens' stock resource of the same name when Gradle
+  merges resources — same mechanism, same caveats, as its sibling files.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <translate
+        android:fromXDelta="0"
+        android:toXDelta="-8%p"
+        android:duration="300"
+        android:interpolator="@interpolator/pixi_emphasized" />
+    <alpha
+        android:fromAlpha="1"
+        android:toAlpha="0"
+        android:duration="105"
+        android:interpolator="@interpolator/pixi_emphasized" />
+</set>

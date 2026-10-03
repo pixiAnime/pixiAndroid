@@ -60,7 +60,22 @@ export function ShellNavProvider({ children }: { children: React.ReactNode }) {
         // deprecated in v7 and warns on every call ("Open debugger to view
         // warnings" toast). The produced action is identical for our routes —
         // `payload.params` reads as `undefined` either way.
-        container.dispatch(CommonActions.navigate(name, params))
+        //
+        // `{ pop: true }` is what makes the bar *switch* instead of push.
+        // StackRouter's NAVIGATE only reuses an existing route when it is the
+        // current one (or when `getId` matches) — with neither, every tap to
+        // another destination appended a **second copy** of that screen:
+        //
+        //   Home > Browse > Home > Browse > Settings > Home   (six taps)
+        //
+        // Each copy remounts the page, so Home/Browse reopened from scratch
+        // (FlatList rebuilt, posters decoded again, scroll dropped back to the
+        // top) and back walked through every duplicate tab. With `pop`, a
+        // destination already in the stack is popped back to — instantly, no
+        // remount — and everything above it (detail screens) is dropped, which
+        // is what tabs do natively; their progress lives in historyStore. A
+        // destination that is not in the stack is still pushed, once.
+        container.dispatch(CommonActions.navigate(name, params, { pop: true }))
       },
     }),
     [activeRoute, container],

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 fade, screen that is LEAVING (push: the screen underneath; pop:
+  the one being dismissed).
+
+  Same file name as a react-native-screens resource: an app resource replaces
+  the library's one when Gradle merges resources, so react-native-screens
+  (4.28.0, pinned in package.json) runs this without being patched. The stock
+  file is a plain 150ms crossfade that runs in parallel with the incoming one.
+
+  105ms on the emphasized curve: fast (the curve is front-loaded, so it is
+  ~90% transparent before the halfway mark of the real time). That speed is the
+  point — the arriving screen now starts *with* it rather than after it (see
+  rns_fade_in.xml), so this half has to get out of the way quickly or the two
+  would stack as two equally opaque screens. It stays well inside the same
+  300ms Material budget, and on a pop it is what makes the dismissed screen
+  clear out fast enough for the revealed one to read as already there.
+
+  The background behind both screens is the same #101214
+  (`colors.background` == `colors.surface`), so the brief moment where neither
+  screen is fully opaque shows no flash.
+
+  Assigned to `animation: 'fade'` by src/navigation/RootNavigator.tsx.
+
+  Re-check this file when react-native-screens is bumped: a qualifier-specific
+  variant (anim-v33/…) or a rename would stop this override winning, silently.
+-->
+<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fromAlpha="1"
+    android:toAlpha="0"
+    android:startOffset="0"
+    android:duration="105"
+    android:interpolator="@interpolator/pixi_emphasized" />

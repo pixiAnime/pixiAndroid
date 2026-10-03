@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material's emphasized easing — md.sys.motion.easing.emphasized,
+  cubic-bezier(0.2, 0, 0, 1) — the curve every M3 transition (fade through,
+  shared axis) is built on. MDC reads it from `motionEasingEmphasizedInterpolator`;
+  there is no public framework equivalent, hence this file.
+
+  `pixi_` prefix so the name can never collide with a library resource.
+
+  Used by the page-transition anims in ../anim/.
+-->
+<pathInterpolator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:pathData="M0,0 C0.2,0 0,1 1,1" />

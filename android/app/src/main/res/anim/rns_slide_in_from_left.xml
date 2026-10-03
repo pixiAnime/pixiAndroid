@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 shared axis (X), screen that is REVEALED when a detail is popped
+  (the list you come back to from AnimeDetail/Watch).
+
+  Mirror image of rns_slide_in_from_right: it comes back in from -30dp (8% of
+  the parent, see that file for the full rationale) instead of +30dp, so
+  backing out reverses the push exactly.
+
+  react-native-screens plays the popped screen's own `animation` option for a
+  pop, which is why this file is reached through the same `slide_from_right`
+  option as the push (ScreenStack.kt → setTweenAnimations(…, shouldUseOpenAnimation = false)).
+
+  Replaces react-native-screens' stock resource of the same name when Gradle
+  merges resources — same mechanism, same caveats, as its sibling files.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <translate
+        android:fromXDelta="-8%p"
+        android:toXDelta="0"
+        android:duration="300"
+        android:interpolator="@interpolator/pixi_emphasized" />
+    <!-- Held at 0 while the outgoing screen fades (fillBefore covers the offset). -->
+    <alpha
+        android:fromAlpha="0"
+        android:toAlpha="1"
+        android:startOffset="105"
+        android:duration="195"
+        android:interpolator="@interpolator/pixi_emphasized" />
+</set>

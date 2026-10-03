@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 shared axis (X), screen that is ARRIVING on a push
+  (AnimeDetail / Watch coming in over a list).
+
+  Same file name as a react-native-screens resource: an app resource replaces
+  the library's one when Gradle merges resources, so react-native-screens
+  (4.28.0, pinned in package.json) runs this without being patched. The stock
+  file is a 100%-wide iOS slide with no fade at all — 300ms of the whole page
+  travelling across the screen, which is what made page changes feel wrong.
+
+  M3 values, from MaterialSharedAxis(X):
+    duration  300ms (motionDurationLong1)
+    easing    emphasized, cubic-bezier(0.2, 0, 0, 1) -> ../interpolator/pixi_emphasized.xml
+    distance  30dp (MDC's mtrl_transition_shared_axis_slide_distance), written
+              here as 8% of the parent — a dimension only parses in <translate>
+              on API 32+, and minSdk is 24. 8% is 29-33dp at any phone width.
+    fading    the same fade-through split as rns_fade_in/out, so the two screens
+              hand over instead of crossfading on top of each other
+
+  Both halves of the pair are overwritten: rns_slide_out_to_left is this
+  transition's outgoing screen, and the reverse pair (rns_slide_in_from_left /
+  rns_slide_out_to_right) is what plays when the screen is popped back off.
+  RTL languages would want the deltas mirrored; the app ships tr/en/ru only.
+
+  Assigned to `animation: 'slide_from_right'` by src/navigation/RootNavigator.tsx.
+
+  Re-check this file when react-native-screens is bumped: a qualifier-specific
+  variant (anim-v33/…) or a rename would stop this override winning, silently.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <translate
+        android:fromXDelta="8%p"
+        android:toXDelta="0"
+        android:duration="300"
+        android:interpolator="@interpolator/pixi_emphasized" />
+    <!-- Held at 0 while the outgoing screen fades (fillBefore covers the offset). -->
+    <alpha
+        android:fromAlpha="0"
+        android:toAlpha="1"
+        android:startOffset="105"
+        android:duration="195"
+        android:interpolator="@interpolator/pixi_emphasized" />
+</set>

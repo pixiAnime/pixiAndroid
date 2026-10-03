@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material 3 shared axis (X), screen that LEAVES when a detail is popped
+  (AnimeDetail/Watch sliding back off over the list underneath).
+
+  Mirror image of rns_slide_out_to_left: it leaves towards +30dp (8% of the
+  parent, see rns_slide_in_from_right.xml for the full rationale) instead of
+  -30dp, which is what makes the pop read as the reverse of the push.
+
+  Replaces react-native-screens' stock resource of the same name when Gradle
+  merges resources — same mechanism, same caveats, as its sibling files.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <translate
+        android:fromXDelta="0"
+        android:toXDelta="8%p"
+        android:duration="300"
+        android:interpolator="@interpolator/pixi_emphasized" />
+    <alpha
+        android:fromAlpha="1"
+        android:toAlpha="0"
+        android:duration="105"
+        android:interpolator="@interpolator/pixi_emphasized" />
+</set>
