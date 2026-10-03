@@ -59,6 +59,11 @@ export const SafeImage = memo(function SafeImage({
           accessibilityLabel={alt}
           onError={() => setFailed(true)}
           resizeMode="cover"
+          // Decode at the drawn size rather than the file's natural size (the
+          // Android default `auto` may do the latter). A row of twenty posters
+          // otherwise decodes twenty full-resolution bitmaps — memory the
+          // device pays for in GC pauses while scrolling.
+          resizeMethod="resize"
           source={{ uri: src as string }}
           style={styles.fill}
         />
