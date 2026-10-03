@@ -31,9 +31,9 @@
  *    `@/platform/fullscreen` turns the device and clears the system bars. RN's
  *    `fullscreen` prop cannot be used: it hands the player to a native
  *    `FullScreenPlayerView` in a window of its own, where these overlay
- *    controls, the cue box and the container subtitles do not exist. Because
- *    `Source.equals` compares `startPosition`, the resume point travels in a
- *    ref — see `resumeAtMsRef`.
+ *    controls, the cue box and the container subtitles do not exist. The
+ *    resume point is kept out of the source too: it lives in `resumeRef`,
+ *    armed per episode and consumed by the first `onLoad`.
  *
  * Deviations, all deliberate:
  *
@@ -52,7 +52,8 @@
  *    player pauses while the app is backgrounded (`AppState`) without ever
  *    resuming on its own after the user paused.
  *  - The media element carries `label` as its `accessibilityLabel`; the extra
- *    `onProgressChange` push (whole-percent steps) feeds `historyStore`'s
+ *    `onProgressChange` push (whole-percent steps, forced on background and
+ *    unmount so the final seconds survive) feeds `historyStore`'s
  *    `updateProgress`, which the store documents as the real player's job.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -92,6 +93,7 @@ import { localizeExtensionMessage } from '@/i18n'
 import { useFullscreenChrome } from '@/components/layout'
 import { enterFullscreen, exitFullscreen } from '@/platform/fullscreen'
 import type { Episode } from '@/providers/episode'
+import type { EpisodeProgress } from '@/stores/historyStore'
 import { colors, fonts, spacing } from '@/theme'
 
 import { CueOverlay } from './player/CueOverlay'
@@ -101,6 +103,7 @@ import { TopBar } from './player/controls/TopBar'
 import { PlaybackFeedback, type FeedbackFlash } from './player/feedback/PlaybackFeedback'
 import { formatRate } from './player/format'
 import { readPlayhead, resetPlayhead, setPlayhead } from './player/playhead'
+import { resolveResumePoint } from './player/resume'
 import { EpisodesSheet } from './player/sheet/EpisodesSheet'
 import { SettingsSheet, type CaptionEntry } from './player/sheet/SettingsSheet'
 import { ErrorState } from './player/states/ErrorState'
@@ -204,6 +207,15 @@ export interface PlayerProps {
   onSubtitleDelayChange?: (delay: number) => void
   /** Extra vs the web: watch progress (percent 0-100, position in seconds). */
   onProgressChange?: (progress: number, position: number) => void
+  /**
+   * Where the page's history says this episode stopped — the resume point.
+   *
+   * Consumed exactly once, by the first `onLoad`, and re-armed only when the
+   * episode changes (this component does not remount between episodes): a
+   * source switch or a retry must never drag the viewer back to a stale second.
+   * Absent means "start at zero", which is every non-history playback.
+   */
+  resume?: EpisodeProgress | null
 }
 
 interface PrepTarget {
@@ -241,6 +253,7 @@ export function Player({
   onSubtitleChange,
   onSubtitleDelayChange,
   onProgressChange,
+  resume,
 }: PlayerProps) {
   const { t } = useTranslation()
   const videoRef = useRef<VideoRef>(null)
@@ -252,10 +265,17 @@ export function Player({
   const subtitleChangeRef = useRef(onSubtitleChange)
   const progressChangeRef = useRef(onProgressChange)
   const nextRef = useRef(onRequestNext)
+  /** Always the page's *latest* resume value; the armed copy is `resumeRef`. */
+  const resumePropRef = useRef(resume)
   sourceRef.current = source
   subtitleChangeRef.current = onSubtitleChange
   progressChangeRef.current = onProgressChange
   nextRef.current = onRequestNext
+  resumePropRef.current = resume
+  /** What the next first-load seeks to; null once it has been consumed. */
+  const resumeRef = useRef<EpisodeProgress | null>(resume)
+  /** Episode that armed value belongs to — what the effect below keys off. */
+  const resumeEpisodeRef = useRef(episodeNav?.currentEpisode ?? null)
 
   const [prepError, setPrepError] = useState<string | null>(null)
   const [target, setTarget] = useState<PrepTarget | null>(null)
@@ -346,14 +366,48 @@ export function Player({
 
   const paused = userPaused || !appActive || ended
 
+  /* ---------------- history push ---------------- */
+
+  /**
+   * Push the playhead to the page (`historyStore`), at most once per whole
+   * percent — unless `force`, which backgrounding and unmount use so the last
+   * few seconds of a session survive instead of being rounded away.
+   *
+   * `measuredDuration` covers the window before `onLoad` has filled the store,
+   * where the progress event itself is the only source of a duration.
+   */
+  const pushProgress = useCallback((force = false, measuredDuration = 0) => {
+    const push = progressChangeRef.current
+    if (!push) return
+    const playhead = readPlayhead()
+    const total = playhead.duration || measuredDuration
+    if (total <= 0) return
+    const percentDone = Math.min(
+      100,
+      Math.max(0, Math.floor((playhead.position / total) * 100)),
+    )
+    if (!force && percentDone === progressPercentRef.current) return
+    progressPercentRef.current = percentDone
+    push(percentDone, playhead.position)
+  }, [])
+
   /* ---------------- background / foreground ---------------- */
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       setAppActive(state === 'active')
+      // Backgrounding is usually the last thing an episode sees before the OS
+      // reclaims the app: write the exact second now, not the last whole
+      // percent — this is the position a reopen resumes from.
+      if (state !== 'active') pushProgress(true)
     })
     return () => subscription.remove()
-  }, [])
+  }, [pushProgress])
+
+  // …and the same on the way out: leaving for the next episode must not lose
+  // the final seconds of this one. Children clean up before parents, so the
+  // page's callback is still alive when this runs.
+  useEffect(() => () => pushProgress(true), [pushProgress])
 
   /* ---------------- per-source UI reset ---------------- */
 
@@ -371,6 +425,26 @@ export function Player({
     progressPercentRef.current = -1
     positionRef.current = 0
   }, [sourceKey])
+
+  /* ---------------- resume ---------------- */
+
+  const currentEpisode = episodeNav?.currentEpisode ?? null
+
+  /**
+   * Arm the saved position when — and only when — the episode changes.
+   *
+   * The page hands over a *live* value (it keeps tracking playback), so arming
+   * on the prop itself would seek back to a stale second on every history
+   * write. The episode number is what makes it mean "where this episode
+   * stopped" instead of "where it is now", and a source switch inside the
+   * episode changes neither — so the consumed `resumeRef` stays consumed and
+   * never re-seeks.
+   */
+  useEffect(() => {
+    if (currentEpisode === resumeEpisodeRef.current) return
+    resumeEpisodeRef.current = currentEpisode
+    resumeRef.current = resumePropRef.current ?? null
+  }, [currentEpisode])
 
   /* ---------------- playback target ---------------- */
 
@@ -890,8 +964,30 @@ export function Player({
     [paused, skipSeconds],
   )
 
+  /**
+   * Metadata is ready: record the duration and — once, for the first load of
+   * an episode — open where the viewer left off.
+   *
+   * Consuming `resumeRef` *before* the seek is what makes it one-shot: a
+   * retry, a manual source switch or a second `onLoad` for the same media
+   * finds `null` and starts from zero. The thresholds live in
+   * `./player/resume` (too early to be worth resuming, or already watched).
+   */
   const handleLoad = useCallback((data: OnLoadData) => {
-    setPlayhead({ duration: data.duration || 0 })
+    const duration = data.duration || 0
+    setPlayhead({ duration })
+
+    const saved = resumeRef.current
+    resumeRef.current = null
+    const at = saved ? resolveResumePoint(saved, duration) : 0
+    if (at > 0) {
+      // Paused, so the frame the viewer comes back to *is* the resume point;
+      // play continues from there (no autoplay, as everywhere else).
+      videoRef.current?.seek(at)
+      positionRef.current = at
+      setPlayhead({ position: at })
+    }
+
     setNativeTracks(
       data.textTracks.map((track) => ({
         index: track.index,
@@ -911,21 +1007,15 @@ export function Player({
    * one store, and the only React work that store causes is a number changing
    * inside `ProgressBar` and `CueOverlay`, both of which are leaves.
    *
-   * The history push is unchanged: `updateProgress` is documented as the real
-   * player's job, and the page never sees this event.
+   * The history push is `updateProgress`'s job and the page never sees this
+   * event — it happens through `pushProgress`, which drops everything short of
+   * a whole percent (backgrounding and unmount force a final, exact one).
    */
   function handleProgress(data: OnProgressData) {
     const at = data.currentTime || 0
     positionRef.current = at
-    const total = readPlayhead().duration || data.seekableDuration || 0
     setPlayhead({ position: at, buffered: data.playableDuration || 0 })
-
-    const push = progressChangeRef.current
-    if (!push || total <= 0) return
-    const percentDone = Math.min(100, Math.max(0, Math.floor((at / total) * 100)))
-    if (percentDone === progressPercentRef.current) return
-    progressPercentRef.current = percentDone
-    push(percentDone, at)
+    pushProgress(false, data.seekableDuration || 0)
   }
 
   const handleError = useCallback(

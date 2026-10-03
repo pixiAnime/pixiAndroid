@@ -19,6 +19,12 @@
  * normalised by the providers. The alias table covers the ISO 639-2/3 spellings
  * that show up in the wild: an extension that labels Turkish `tur` still
  * matches an app that says `tr`.
+ *
+ * Two guards sit on top of the ordering, both in `nextSubtitleSelection`: a
+ * track is only picked if it can be *drawn* (ASS is metadata-only here), and a
+ * provisional pick is replaced the moment the app's own language shows up —
+ * the subtitle query re-runs once the AniList id resolves, so the first list
+ * to arrive is often a stopgap rather than the answer.
  */
 
 /** The subset of a subtitle track this decision needs. */
@@ -28,6 +34,16 @@ export interface PickableSubtitle {
   language: string
   /** Provider-flagged "play this one by default". */
   default?: boolean
+  /**
+   * Container format as the extension layer normalized it.
+   *
+   * `ass` is load-bearing here: the cues never render (`resolveSubtitleTrack`
+   * refuses the format) *and* the settings menu filters it out, so a track
+   * that is picked automatically but never listed reads to the viewer as
+   * "subtitles were not selected at all". An automatic choice must therefore
+   * skip it.
+   */
+  format?: string
 }
 
 /**
@@ -65,15 +81,54 @@ export function sameLanguage(a: string, b: string): boolean {
  * `language` is the app's current language (`i18n.resolvedLanguage`); a
  * `null`/`undefined` means "no preference", which drops straight through to the
  * provider's own default.
+ *
+ * Only tracks that can actually be drawn are candidates — see
+ * `PickableSubtitle.format`.
  */
 export function pickInitialSubtitle(
   subtitles: readonly PickableSubtitle[],
   language: string | null | undefined,
 ): string | null {
+  const candidates = subtitles.filter((subtitle) => subtitle.format !== 'ass')
   if (language) {
-    const match = subtitles.find((subtitle) => sameLanguage(subtitle.language, language))
+    const match = candidates.find((subtitle) => sameLanguage(subtitle.language, language))
     if (match) return match.key
   }
-  const fallback = subtitles.find((subtitle) => subtitle.default === true)
+  const fallback = candidates.find((subtitle) => subtitle.default === true)
   return fallback?.key ?? null
+}
+
+/**
+ * What the selection should become, given everything the page knows about it.
+ *
+ * The rule the caller needs is *patience*: the subtitle query re-runs once the
+ * AniList id resolves (its key carries that id), so the first list to arrive
+ * can be a stopgap — a provider's English default, say — while the archive
+ * that holds the Turkish tracks answers a moment later. A stopgap must not
+ * become final, or the app's own language never wins. So:
+ *
+ *  1. **a deliberate choice is final.** `manual` is set the moment the viewer
+ *     touches the track list; nothing automatic overrides it, including
+ *     turning subtitles off.
+ *  2. **the app's language wins whenever it shows up** — replacing whatever
+ *     provisional track is on screen.
+ *  3. **an empty list is not a decision.** While a query re-runs the list is
+ *     briefly empty; clearing then would blink subtitles off mid-episode, so
+ *     the current choice stands.
+ *
+ * Returns the value to store — equal to `current` when nothing should change.
+ */
+export function nextSubtitleSelection(state: {
+  /** What is selected now (may be `null`). */
+  current: string | null
+  /** The viewer picked — or turned off — the track themselves. */
+  manual: boolean
+  subtitles: readonly PickableSubtitle[]
+  /** The app's current language, as `pickInitialSubtitle` wants it. */
+  language: string | null | undefined
+}): string | null {
+  const { current, manual, subtitles, language } = state
+  if (manual) return current
+  const preferred = pickInitialSubtitle(subtitles, language)
+  return preferred ?? current
 }

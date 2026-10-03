@@ -58,6 +58,7 @@ import { formatDate, padEpisode } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import {
   selectAnimeHistory,
+  selectEpisodeProgress,
   selectWatchedEpisodes,
   useHistoryStore,
 } from '@/stores/historyStore'
@@ -78,7 +79,7 @@ import { Player, ResolvingSource } from './Player'
 import { SourceSelector } from './SourceSelector'
 import { SubtitleSelector } from './SubtitleSelector'
 import type { SubtitleSize } from './subtitleScale'
-import { pickInitialSubtitle } from './subtitlePick'
+import { nextSubtitleSelection } from './subtitlePick'
 import { useExtensionSources, useExtensionSubtitles } from './useExtensionSources'
 
 // Side-effect: bootstraps the i18next singleton (web: `main.tsx`).
@@ -112,9 +113,25 @@ export function WatchPage() {
   const sources = sourcesView.sources
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  /**
+   * The caption track on screen — **controlled**: children must be handed
+   * `handleSubtitleChange`, never this setter. Bypassing it drops the "the
+   * viewer chose" flag, and the auto-pick below then writes over the tap on
+   * its very next run — the chip flips back within a second.
+   */
   const [activeSubtitle, setActiveSubtitle] = useState<string | null>(null)
   const [subtitleDelay, setSubtitleDelay] = useState(0)
-  const appliedDefaultSub = useRef(false)
+  /**
+   * Set the moment the viewer picks a track — or turns subtitles off — and it
+   * is the only thing that ever sticks: an automatic pick keeps following the
+   * app's language while better lists arrive, because the subtitle query
+   * re-runs once the AniList id resolves. See `./subtitlePick`.
+   *
+   * Every path that changes `activeSubtitle` for the viewer sets it:
+   * the captions list, the source card's inline row, and the player's own
+   * settings sheet (`onSubtitleChange`).
+   */
+  const manualSubtitle = useRef(false)
 
   /* ---------------- player preferences ---------------- */
 
@@ -150,7 +167,7 @@ export function WatchPage() {
   useEffect(() => {
     setSelectedKey(null)
     setActiveSubtitle(null)
-    appliedDefaultSub.current = false
+    manualSubtitle.current = false
   }, [animeId, episode])
 
   const selected = sources.find((source) => source.key === selectedKey) ?? sources[0] ?? null
@@ -170,22 +187,40 @@ export function WatchPage() {
   // Pick the track the viewer is most likely to want: their own language
   // first, then whatever the provider flagged, then nothing — see
   // `./subtitlePick` for the rules and why they are in that order.
+  //
+  // It re-runs on every list/language change and takes *no* lock, unlike the
+  // version that froze the first hit: the query re-runs once the AniList id
+  // resolves, so a Turkish track regularly arrives after an English stopgap
+  // and has to be allowed to replace it. The `__DEV__` line is the on-device
+  // diagnosis for "why is this caption in a language I did not ask for".
   useEffect(() => {
-    if (appliedDefaultSub.current) return
-    const preferred = pickInitialSubtitle(subtitles, appLanguage)
-    if (preferred) {
-      setActiveSubtitle(preferred)
-      appliedDefaultSub.current = true
+    const next = nextSubtitleSelection({
+      current: activeSubtitle,
+      manual: manualSubtitle.current,
+      subtitles,
+      language: appLanguage,
+    })
+    if (__DEV__) {
+      console.debug('[subs]', {
+        language: appLanguage,
+        tracks: subtitles.map((sub) =>
+          sub.format === 'ass' ? `${sub.language}:ass` : sub.language,
+        ),
+        chosen: next,
+        manual: manualSubtitle.current,
+      })
     }
-  }, [subtitles, appLanguage])
+    setActiveSubtitle(next)
+  }, [subtitles, appLanguage, activeSubtitle])
 
   /**
    * Stop auto-picking the moment the viewer chooses for themselves. Without
    * this, a later `subtitles` change (a different source resolving) would
-   * silently override a deliberate pick.
+   * silently override a deliberate pick — or turn captions back on for a
+   * viewer who switched them off.
    */
   const handleSubtitleChange = useCallback((key: string | null) => {
-    appliedDefaultSub.current = true
+    manualSubtitle.current = true
     setActiveSubtitle(key)
   }, [])
 
@@ -196,6 +231,17 @@ export function WatchPage() {
   const updateProgress = useHistoryStore((state) => state.updateProgress)
   const watched = useMemo(() => selectWatchedEpisodes(entries, animeId), [entries, animeId])
   const lastWatched = useMemo(() => selectAnimeHistory(entries, animeId), [entries, animeId])
+  /**
+   * Where this episode last stopped — the player's resume point.
+   *
+   * Derived from the live history on purpose: it is only *armed* by the player
+   * when the episode identity changes, so a value that keeps tracking playback
+   * cannot make it seek backwards mid-episode (see `Player`'s `resume` prop).
+   */
+  const resume = useMemo(
+    () => selectEpisodeProgress(entries, animeId, episode),
+    [entries, animeId, episode],
+  )
 
   // Which provider page holds the current episode? (Jikan: 100 per page)
   useEffect(() => {
@@ -219,8 +265,6 @@ export function WatchPage() {
       episode,
       episodeTitle: epData?.title ?? null,
       totalEpisodes: anime.episodes ?? null,
-      progress: 0,
-      position: 0,
     })
     // Prefetch the next page of episodes for smoother navigation.
     if (episodesQuery.data?.hasNextPage) {
@@ -369,6 +413,7 @@ export function WatchPage() {
         onSubtitleChange={handleSubtitleChange}
         onSubtitleDelayChange={setSubtitleDelay}
         onSubtitleSizeChange={handleSubtitleSize}
+        resume={resume}
         skipSeconds={skipSeconds}
         source={selected ?? sources[0]}
         subtitleDelay={subtitleDelay}
@@ -476,13 +521,16 @@ export function WatchPage() {
           {sources.length > 0 ? (
             <View style={styles.stack}>
               <SourceSelector
+                activeSubtitleKey={activeSubtitle}
                 onSelect={setSelectedKey}
+                onSubtitleSelect={handleSubtitleChange}
                 selectedKey={selected?.key ?? null}
                 sources={sources}
+                subtitles={subtitles}
               />
               <SubtitleSelector
                 activeKey={activeSubtitle}
-                onChange={setActiveSubtitle}
+                onChange={handleSubtitleChange}
                 subtitles={subtitles}
               />
               {subtitleNotes.length > 0 ? (

@@ -3,8 +3,10 @@
  *
  * - entries are per anime+episode (drives watched state in the episode list);
  * - Continue Watching derives "latest episode per anime" via selector;
- * - the real player will additionally push progress/position through
- *   `updateProgress`.
+ * - progress/position are `updateProgress`'s job, and `recordWatch`
+ *   *preserves* them when the caller omits them: opening an episode is what
+ *   creates the entry, so it must not erase where the viewer stopped — that is
+ *   what resume-on-open reads back (`selectEpisodeProgress`).
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -40,6 +42,9 @@ export const useHistoryStore = create<HistoryState>()(
       recordWatch: (input) =>
         set((state) => {
           const now = Date.now()
+          const existing = state.entries.find(
+            (e) => e.animeId === input.animeId && e.episode === input.episode,
+          )
           const updated: WatchHistoryEntry = {
             animeId: input.animeId,
             title: input.title,
@@ -49,8 +54,11 @@ export const useHistoryStore = create<HistoryState>()(
             episodeTitle: input.episodeTitle ?? null,
             totalEpisodes: input.totalEpisodes ?? null,
             lastWatchedAt: now,
-            progress: input.progress,
-            position: input.position,
+            // Re-opening an episode must not erase where the viewer was: a
+            // caller that omits progress/position keeps what the previous
+            // session recorded, which is what resume-on-open reads.
+            progress: input.progress ?? existing?.progress,
+            position: input.position ?? existing?.position,
           }
 
           const withoutSame = state.entries.filter(
@@ -117,4 +125,33 @@ export function selectAnimeHistory(
     if (!latest || entry.lastWatchedAt > latest.lastWatchedAt) latest = entry
   }
   return latest
+}
+
+/** Saved playback for one episode — what resuming an episode needs. */
+export interface EpisodeProgress {
+  /** Position in seconds; 0 when the episode has never really played. */
+  position: number
+  /** Whole percent 0–100 as the player last reported it; 0 when unknown. */
+  percent: number
+}
+
+/**
+ * Where this episode last stopped, or zeros when it never did.
+ *
+ * A page that only wants the value for the episode it is showing reads this
+ * once through `useHistoryStore.getState()` inside a memo keyed on the
+ * episode, rather than subscribing to every history write.
+ */
+export function selectEpisodeProgress(
+  entries: WatchHistoryEntry[],
+  animeId: number,
+  episode: number,
+): EpisodeProgress {
+  const entry = entries.find((e) => e.animeId === animeId && e.episode === episode)
+  const position = entry?.position ?? 0
+  const percent = entry?.progress ?? 0
+  return {
+    position: Number.isFinite(position) && position > 0 ? position : 0,
+    percent: Number.isFinite(percent) && percent > 0 ? Math.min(100, percent) : 0,
+  }
 }

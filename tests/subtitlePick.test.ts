@@ -11,6 +11,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
+  nextSubtitleSelection,
   pickInitialSubtitle,
   sameLanguage,
 } from '../src/pages/Watch/subtitlePick.ts'
@@ -66,4 +67,67 @@ test('the first matching track in provider order is the one that wins', () => {
     { key: 'p|two', language: 'tr' },
   ]
   assert.equal(pickInitialSubtitle(twoTurkish, 'tr'), 'p|one')
+})
+
+/* -------------------------------------------------------------------- *
+ * What the page wraps around the pick — see `nextSubtitleSelection`.
+ * -------------------------------------------------------------------- */
+
+test('ASS is never chosen automatically, because it never renders here', () => {
+  // `resolveSubtitleTrack` refuses the format and the settings menu filters it
+  // out, so an automatic pick that lands on it reads as "nothing was selected".
+  const mixed = [
+    { key: 'p|tr-ass', language: 'tr', format: 'ass' },
+    { key: 'p|en-vtt', language: 'en', format: 'vtt', default: true },
+  ]
+  assert.equal(pickInitialSubtitle(mixed, 'tr'), 'p|en-vtt')
+  assert.equal(pickInitialSubtitle([mixed[0]], 'tr'), null)
+})
+
+test('a stopgap default gives way when the app language arrives', () => {
+  // The subtitle query re-runs once the AniList id resolves, so the first list
+  // is often a provider's English default and the Turkish archive answers
+  // later. Locking on the first hit is exactly the reported bug.
+  const englishOnly = [{ key: 'p|en', language: 'en', default: true }]
+  const withTurkish = [...englishOnly, { key: 'a|tr', language: 'tr' }]
+
+  const first = nextSubtitleSelection({
+    current: null,
+    manual: false,
+    subtitles: englishOnly,
+    language: 'tr',
+  })
+  assert.equal(first, 'p|en')
+
+  const later = nextSubtitleSelection({
+    current: first,
+    manual: false,
+    subtitles: withTurkish,
+    language: 'tr',
+  })
+  assert.equal(later, 'a|tr')
+})
+
+test('a manual choice — captions off included — is final', () => {
+  const subtitles = [{ key: 'a|tr', language: 'tr' }]
+  assert.equal(
+    nextSubtitleSelection({ current: null, manual: true, subtitles, language: 'tr' }),
+    null,
+  )
+  assert.equal(
+    nextSubtitleSelection({ current: 'p|en', manual: true, subtitles, language: 'tr' }),
+    'p|en',
+  )
+})
+
+test('an empty list keeps what is on screen rather than blinking captions off', () => {
+  // While a query re-runs the list is briefly empty; that is not a decision.
+  assert.equal(
+    nextSubtitleSelection({ current: 'p|en', manual: false, subtitles: [], language: 'tr' }),
+    'p|en',
+  )
+  assert.equal(
+    nextSubtitleSelection({ current: null, manual: false, subtitles: [], language: 'tr' }),
+    null,
+  )
 })
