@@ -1,7 +1,7 @@
 /** Small badges: score, type, status — monochrome, sharp. */
 import type { ReactNode } from 'react'
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
-import { Star } from 'lucide-react-native'
+import { Star } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { formatScore } from '@/lib/format'

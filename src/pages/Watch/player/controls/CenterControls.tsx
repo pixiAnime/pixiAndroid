@@ -28,7 +28,7 @@
  * the empty middle of this row.
  */
 import { Pressable, StyleSheet, View } from 'react-native'
-import { FastForward, Pause, Play, Rewind, RotateCcw } from 'lucide-react-native'
+import { FastForward, Pause, Play, Rewind, RotateCcw } from '@/components/icons'
 
 import { colors, radii, spacing } from '@/theme'
 

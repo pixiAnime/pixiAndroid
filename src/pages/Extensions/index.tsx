@@ -24,7 +24,7 @@ import {
   Puzzle,
   RefreshCw,
   Trash2,
-} from 'lucide-react-native'
+} from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { SafeImage } from '@/components/anime'

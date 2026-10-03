@@ -10,7 +10,7 @@
  */
 import { memo, useId, useState } from 'react'
 import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
-import { ImageOff } from 'lucide-react-native'
+import { ImageOff } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg'
 

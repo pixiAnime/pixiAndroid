@@ -28,7 +28,7 @@
  */
 import { Fragment } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Maximize, Minimize, PictureInPicture2, Settings, Volume2, VolumeX } from 'lucide-react-native'
+import { Maximize, Minimize, PictureInPicture2, Settings, Volume2, VolumeX } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

@@ -11,7 +11,7 @@
  */
 import { StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { Captions } from 'lucide-react-native'
+import { Captions } from '@/components/icons'
 
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'

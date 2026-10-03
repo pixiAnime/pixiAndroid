@@ -36,7 +36,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { X } from 'lucide-react-native'
+import { X } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

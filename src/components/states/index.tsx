@@ -9,7 +9,7 @@
  */
 import type { ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { AlertTriangle, CloudOff, RefreshCw, SearchX, ShieldAlert } from 'lucide-react-native'
+import { AlertTriangle, CloudOff, RefreshCw, SearchX, ShieldAlert } from '@/components/icons'
 
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Primitives'

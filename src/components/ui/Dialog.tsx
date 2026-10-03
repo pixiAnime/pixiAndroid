@@ -9,7 +9,7 @@
  * right-aligned, and destructive actions use the `destructive` button variant.
  */
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { X } from 'lucide-react-native'
+import { X } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

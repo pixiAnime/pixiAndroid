@@ -30,7 +30,7 @@
  */
 import { Fragment } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { ChevronLeft, ListVideo, SkipBack, SkipForward } from 'lucide-react-native'
+import { ChevronLeft, ListVideo, SkipBack, SkipForward } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

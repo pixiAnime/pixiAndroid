@@ -17,7 +17,7 @@
  * than a comfortable touch target is just wasted screen (§18).
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react-native'
+import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
 
 import { colors, fonts, spacing } from '@/theme'
 

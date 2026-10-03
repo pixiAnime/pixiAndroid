@@ -13,7 +13,7 @@
  * Long-pressing the mark opens the `__DEV__` spike screen (M0 harness).
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Puzzle } from 'lucide-react-native'
+import { Puzzle } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { IconButton } from '@/components/ui/IconButton'

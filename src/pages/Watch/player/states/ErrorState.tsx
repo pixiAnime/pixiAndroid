@@ -26,7 +26,7 @@
  */
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, RefreshCw } from 'lucide-react-native'
+import { AlertTriangle, RefreshCw } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

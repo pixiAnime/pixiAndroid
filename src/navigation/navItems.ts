@@ -6,7 +6,7 @@
  * Mirrors `pixiWeb/src/components/layout/nav-items.ts`, with `to` (the web
  * path) kept alongside `screen` so the two stay obviously in step.
  */
-import { Home, Search, Settings, SquareStack } from 'lucide-react-native'
+import { Home, Search, Settings, SquareStack } from '@/components/icons'
 import type { ComponentType } from 'react'
 
 import type { RootRouteName } from './types'

@@ -8,7 +8,7 @@
  */
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Check } from 'lucide-react-native'
+import { Check } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

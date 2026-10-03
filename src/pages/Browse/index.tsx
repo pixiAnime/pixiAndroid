@@ -16,7 +16,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack'
-import { Loader2, RotateCcw } from 'lucide-react-native'
+import { Loader2, RotateCcw } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { AnimeCard } from '@/components/anime'

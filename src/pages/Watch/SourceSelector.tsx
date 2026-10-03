@@ -11,7 +11,7 @@
 import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { Layers } from 'lucide-react-native'
+import { Layers } from '@/components/icons'
 
 import { Button } from '@/components/ui/Button'
 import type { FlatSource } from '@/extensions'

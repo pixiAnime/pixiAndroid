@@ -13,7 +13,7 @@
 import { memo, useContext, useId } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 import { NavigationContainerRefContext } from '@react-navigation/native'
-import { Info, Play, Star } from 'lucide-react-native'
+import { Info, Play, Star } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 

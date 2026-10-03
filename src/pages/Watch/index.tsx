@@ -43,7 +43,7 @@ import type {
   NativeStackScreenProps,
 } from '@react-navigation/native-stack'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Info, Puzzle } from 'lucide-react-native'
+import { ChevronLeft, ChevronRight, Info, Puzzle } from '@/components/icons'
 
 import { SafeImage } from '@/components/anime'
 import { Footer, ScreenLayout, useIsFullscreen } from '@/components/layout'

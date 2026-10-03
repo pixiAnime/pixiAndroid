@@ -31,7 +31,7 @@
  */
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
-import { FastForward, Rewind } from 'lucide-react-native'
+import { FastForward, Rewind } from '@/components/icons'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 

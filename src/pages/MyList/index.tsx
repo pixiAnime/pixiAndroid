@@ -10,7 +10,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Heart, Play, Trash2 } from 'lucide-react-native'
+import { Heart, Play, Trash2 } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { SafeImage } from '@/components/anime'

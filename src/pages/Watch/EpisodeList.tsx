@@ -23,7 +23,7 @@ import {
   type ScrollViewInstance,
 } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { Check } from 'lucide-react-native'
+import { Check } from '@/components/icons'
 
 import { formatDate, padEpisode } from '@/lib/format'
 import type { Episode } from '@/providers/episode'

@@ -32,7 +32,7 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack'
-import { ArrowRight, Calendar, Clapperboard, Play, Star, Users } from 'lucide-react-native'
+import { ArrowRight, Calendar, Clapperboard, Play, Star, Users } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 

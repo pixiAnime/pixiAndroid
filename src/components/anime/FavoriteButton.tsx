@@ -2,7 +2,7 @@
  * FavoriteButton — add/remove from My List (local store).
  */
 import { StyleSheet, Text } from 'react-native'
-import { Heart } from 'lucide-react-native'
+import { Heart } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/Button'

@@ -25,7 +25,7 @@ import {
   type ReactNode,
 } from 'react'
 import { FlatList, StyleSheet, Text, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native'
-import { ChevronLeft, ChevronRight } from 'lucide-react-native'
+import { ChevronLeft, ChevronRight } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/Button'
