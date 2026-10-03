@@ -8,7 +8,7 @@
  * but the reserved box, the muted striped fill and the `ImageOff` glyph are
  * reproduced one-for-one.
  */
-import { useId, useState } from 'react'
+import { memo, useId, useState } from 'react'
 import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { ImageOff } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
@@ -38,7 +38,13 @@ const ICON_TINT = 'rgba(146,146,146,0.6)'
 /** The web's `repeating-linear-gradient(135deg, rgba(255,255,255,0.04) …)`. */
 const STRIPE_FILL = 'rgba(255,255,255,0.04)'
 
-export function SafeImage({ src, alt, aspectRatio = 2 / 3, fill, style }: SafeImageProps) {
+export const SafeImage = memo(function SafeImage({
+  src,
+  alt,
+  aspectRatio = 2 / 3,
+  fill,
+  style,
+}: SafeImageProps) {
   const { t } = useTranslation()
   const [failed, setFailed] = useState(false)
   const patternId = `stripes${useId().replace(/[^a-zA-Z0-9]/g, '')}`
@@ -81,7 +87,7 @@ export function SafeImage({ src, alt, aspectRatio = 2 / 3, fill, style }: SafeIm
       )}
     </View>
   )
-}
+})
 
 const styles = StyleSheet.create({
   frame: { overflow: 'hidden', backgroundColor: colors.muted },

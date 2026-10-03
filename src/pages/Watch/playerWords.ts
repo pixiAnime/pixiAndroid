@@ -44,6 +44,9 @@ export type PlayerWord =
   | 'on'
   | 'mute'
   | 'unmute'
+  | 'volume'
+  | 'showControls'
+  | 'hideControls'
   | 'fullscreen'
   | 'enterFullscreen'
   | 'exitFullscreen'
@@ -88,6 +91,9 @@ const WORDS: Record<string, Record<PlayerWord, string>> = {
     on: 'On',
     mute: 'Mute',
     unmute: 'Unmute',
+    volume: 'Volume',
+    showControls: 'Show controls',
+    hideControls: 'Hide controls',
     fullscreen: 'Fullscreen',
     enterFullscreen: 'Enter Fullscreen',
     exitFullscreen: 'Exit Fullscreen',
@@ -124,6 +130,9 @@ const WORDS: Record<string, Record<PlayerWord, string>> = {
     on: 'Açık',
     mute: 'Sessize Al',
     unmute: 'Sesi Aç',
+    volume: 'Ses Düzeyi',
+    showControls: 'Kontrolleri göster',
+    hideControls: 'Kontrolleri gizle',
     fullscreen: 'Tam Ekran',
     enterFullscreen: 'Tam Ekrana Geç',
     exitFullscreen: 'Tam Ekranı Kapat',
@@ -160,6 +169,9 @@ const WORDS: Record<string, Record<PlayerWord, string>> = {
     on: 'Вкл.',
     mute: 'Выключить звук',
     unmute: 'Включить звук',
+    volume: 'Громкость',
+    showControls: 'Показать элементы управления',
+    hideControls: 'Скрыть элементы управления',
     fullscreen: 'Полный экран',
     enterFullscreen: 'Во весь экран',
     exitFullscreen: 'Выйти из полноэкранного режима',

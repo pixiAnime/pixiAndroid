@@ -4,9 +4,11 @@
  * Three gestures share one small area and none of them may swallow another, so
  * the arbitration lives here rather than in the component:
  *
- *  - **single tap** → play/pause. It has to *wait* for the double-tap window
- *    to close, which is why the tap feels instant only once we know it was
- *    alone.
+ *  - **single tap** → toggle the chrome (show/hide the controls), the way
+ *    YouTube does it. Playback is started and stopped *only* by the play
+ *    button, so a stray tap on the picture can never pause a film. It has to
+ *    *wait* for the double-tap window to close, which is why the chrome flips
+ *    only once we know the tap was alone.
  *  - **double tap** → seek ±`SKIP_SECONDS`, in the half that was tapped. The
  *    direction is the *second* tap's, so a viewer can correct a half-missed
  *    first tap.
@@ -48,7 +50,8 @@ export type SurfaceEvent =
   | { type: 'hold' }
 
 export type SurfaceAction =
-  | { type: 'toggle' }
+  /** A lone tap: show or hide the player chrome (never play/pause). */
+  | { type: 'chrome' }
   | { type: 'skip'; zone: SurfaceZone }
   | { type: 'boost' }
   | { type: 'unboost' }
@@ -133,7 +136,7 @@ export function stepGesture(state: GestureState, event: SurfaceEvent): GestureSt
       // press-and-hold, and the hold threshold is the only thing that may
       // resolve it.
       if (state.phase !== 'pending' || state.held) return { state, timers: NONE }
-      return { state: IDLE, action: { type: 'toggle' }, timers: NONE }
+      return { state: IDLE, action: { type: 'chrome' }, timers: NONE }
 
     case 'hold':
       if (state.phase !== 'pending' || !state.held) return { state, timers: NONE }

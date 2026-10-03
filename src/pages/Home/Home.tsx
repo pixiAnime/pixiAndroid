@@ -6,7 +6,7 @@
  * continue-watching row hidden entirely when empty (spec §16).
  */
 import { useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { ArrowRight, Play } from 'lucide-react-native'
@@ -26,7 +26,7 @@ import {
 import type { RootStackParamList } from '@/navigation/types'
 import { selectContinueWatching, useHistoryStore } from '@/stores/historyStore'
 import { formatRelativeTime, padEpisode } from '@/lib/format'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import '@/i18n'
 
@@ -83,10 +83,19 @@ export function HomePage() {
             </Pressable>
           </View>
 
-          <View accessibilityLabel={t('home.continueWatchingAria')} style={styles.continueRow}>
-            {continueWatching.map((entry) => (
+          <FlatList
+            accessibilityLabel={t('home.continueWatchingAria')}
+            accessibilityRole="list"
+            contentContainerStyle={styles.continueRow}
+            data={continueWatching}
+            decelerationRate="fast"
+            horizontal
+            /* Above the fold: mount the ~2 visible cards, stream the rest. */
+            initialNumToRender={3}
+            keyExtractor={(entry) => `${entry.animeId}-${entry.episode}`}
+            maxToRenderPerBatch={3}
+            renderItem={({ item: entry }) => (
               <Pressable
-                key={`${entry.animeId}-${entry.episode}`}
                 accessibilityRole="button"
                 style={styles.continueCard}
                 onPress={() => navigation.navigate('Watch', { malId: entry.animeId, episode: entry.episode })}>
@@ -125,8 +134,10 @@ export function HomePage() {
                   ) : null}
                 </View>
               </Pressable>
-            ))}
-          </View>
+            )}
+            showsHorizontalScrollIndicator={false}
+            windowSize={3}
+          />
         </View>
       ) : null}
 
@@ -220,18 +231,18 @@ const styles = StyleSheet.create({
   sectionMeta: { ...text.monoSmall, letterSpacing: 0, textTransform: 'none' },
   sectionLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   sectionLinkLabel: { ...text.monoLabel, color: colors.mutedForeground },
-  continueRow: { flexDirection: 'row', gap: spacing.md, overflow: 'hidden' },
+  /* Horizontal-list content container — the row direction comes from `horizontal`. */
+  continueRow: { gap: spacing.md },
   continueCard: {
     flexDirection: 'row',
     gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.sm,
     width: 256,
     flexShrink: 0,
   },
-  continuePoster: { width: 48, flexShrink: 0, borderWidth: 1, borderColor: colors.border },
+  continuePoster: { width: 48, flexShrink: 0, borderRadius: radii.sm, overflow: 'hidden' },
   continueBody: { flex: 1, minWidth: 0, gap: 2 },
   continueTitle: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.foreground },
   continueEpisode: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, color: colors.mutedForeground },
@@ -246,7 +257,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.foreground,
   },
-  progressTrack: { height: 2, width: '100%', backgroundColor: colors.muted, marginTop: spacing.xs },
-  progressFill: { height: '100%', backgroundColor: colors.foreground },
+  progressTrack: { height: 4, width: '100%', borderRadius: radii.pill, backgroundColor: colors.surfaceContainerHighest, marginTop: spacing.xs, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.primary },
   actionLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.mutedForeground },
 })

@@ -14,7 +14,7 @@ import { AlertTriangle, CloudOff, RefreshCw, SearchX, ShieldAlert } from 'lucide
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Primitives'
 import { toAppError, type AppErrorInfo } from '@/lib/errors'
-import { colors, fonts, layout, spacing, text } from '@/theme'
+import { colors, fonts, layout, radii, spacing, text } from '@/theme'
 
 /* ------------------------------------------------------------------ Error */
 
@@ -93,7 +93,7 @@ export function AnimeCardSkeleton({ width = '100%' }: { width?: number | `${numb
   const posterHeight = typeof width === 'number' ? Math.round(width * 1.5) : 216
   return (
     <View style={[styles.cardSkeleton, { width }]}>
-      <Skeleton width="100%" height={posterHeight} radius={0} />
+      <Skeleton width="100%" height={posterHeight} radius={radii.lg} />
       <Skeleton width="80%" height={14} radius={0} />
       <Skeleton width="40%" height={12} radius={0} />
     </View>
@@ -223,8 +223,9 @@ export function RefetchingLabel({ label = 'Refreshing' }: { label?: string }) {
 const styles = StyleSheet.create({
   errorPanel: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(17,17,17,0.4)',
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.lg,
@@ -232,11 +233,10 @@ const styles = StyleSheet.create({
   errorFull: { paddingHorizontal: spacing.xxl, paddingVertical: 64 },
   errorCompact: { paddingHorizontal: spacing.xl, paddingVertical: 32 },
   iconBox: {
-    width: 40,
-    height: 40,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.muted,
+    width: 48,
+    height: 48,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceContainerHighest,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -252,8 +252,9 @@ const styles = StyleSheet.create({
 
   emptyPanel: {
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.xxl,
     paddingVertical: 56,
     alignItems: 'center',
@@ -274,16 +275,22 @@ const styles = StyleSheet.create({
   cardSkeleton: { gap: spacing.sm, flexShrink: 0 },
   row: { flexDirection: 'row', gap: spacing.md, overflow: 'hidden' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.lg },
-  hero: { height: 448, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', justifyContent: 'flex-end' },
+  hero: {
+    height: 448,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
   heroCopy: { position: 'absolute', left: 24, right: 24, bottom: 24, gap: 12 },
   heroActions: { flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.sm },
   section: { gap: spacing.md },
   sectionRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.sm,
   },
   sectionCopy: { flex: 1, gap: 6, paddingTop: 2 },

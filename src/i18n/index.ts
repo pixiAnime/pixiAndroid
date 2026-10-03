@@ -12,6 +12,24 @@ import { en } from './resources/en'
 import { tr } from './resources/tr'
 import { ru } from './resources/ru'
 import { localizeExtensionMessage } from './ext-messages'
+import { mobileOverlay } from './mobile'
+
+/**
+ * Deep-merge the mobile-only overlay into a shared resource bundle. The
+ * overlay only adds keys (never overrides shared ones), so the synced web copy
+ * stays the source of truth for everything it defines.
+ */
+function withMobileOverlay<T extends object, U extends object>(base: T, extra: U): T & U {
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) }
+  for (const [key, value] of Object.entries(extra)) {
+    const current = out[key]
+    out[key] =
+      value && typeof value === 'object' && current && typeof current === 'object'
+        ? { ...(current as object), ...(value as object) }
+        : value
+  }
+  return out as T & U
+}
 
 export const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -70,9 +88,9 @@ if (!i18next.isInitialized) {
     .use(initReactI18next)
     .init({
       resources: {
-        en: { translation: en },
-        tr: { translation: tr },
-        ru: { translation: ru },
+        en: { translation: withMobileOverlay(en, mobileOverlay.en) },
+        tr: { translation: withMobileOverlay(tr, mobileOverlay.tr) },
+        ru: { translation: withMobileOverlay(ru, mobileOverlay.ru) },
       },
       lng: detectLanguage(),
       fallbackLng: 'en',

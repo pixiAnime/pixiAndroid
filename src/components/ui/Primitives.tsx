@@ -1,21 +1,62 @@
 /**
- * Small layout primitives that the web takes from shadcn but that are trivial
- * in RN: `Separator` (1px rule) and `Skeleton` (pulse block), plus `Chip` —
- * the mono uppercase bordered square used for genre filters and detail tags
- * (`border px-2 py-1 font-mono text-[0.65rem] uppercase`).
+ * Small primitives: `Separator` (1px rule), `Skeleton` (subtle pulse block)
+ * and `Chip` (Material 3 filter chip).
  *
- * Note on pulses: RN has no `animate-pulse`, so `Skeleton` fades instead.
- * The geometry still matches the real content exactly (see `ROW_CARD_WIDTH`)
- * so nothing jumps when data arrives.
+ * `Skeleton` keeps the exact geometry of the real content it stands in for, so
+ * nothing jumps when data arrives. RN has no `animate-pulse`, so it fades on a
+ * gentle loop rather than shimmering.
  */
-import { Animated, StyleSheet, Text, View, type PressableProps, type StyleProp, type ViewStyle } from 'react-native'
-import { useEffect, useRef } from 'react'
-import { Pressable } from 'react-native'
+import { useEffect, useState } from 'react'
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
 
-import { colors, fonts, radii, spacing } from '@/theme'
+import { colors, radii, spacing, text } from '@/theme'
 
 export function Separator({ style }: { style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.separator, style]} />
+}
+
+/**
+ * One native-driven pulse shared by every skeleton on screen.
+ *
+ * A per-skeleton `Animated.loop` meant Home's cold load ran ~190 loops
+ * (8 rows × 8 cards × 3 blocks each), each scheduling JS restart callbacks
+ * during the exact frames the JS thread is busiest with query results and
+ * mounts. One loop animating one value that all skeletons read is O(1) and
+ * visually identical — the web's `animate-pulse` is synchronized too.
+ * Reference-counted so it stops when the last skeleton unmounts.
+ */
+let pulseValue: Animated.Value | undefined
+let pulseLoop: Animated.CompositeAnimation | undefined
+let pulseUsers = 0
+
+function retainPulse(): Animated.Value {
+  if (!pulseValue) {
+    const value = new Animated.Value(0.5)
+    pulseValue = value
+    pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(value, { toValue: 0.9, duration: 800, useNativeDriver: true }),
+        Animated.timing(value, { toValue: 0.5, duration: 800, useNativeDriver: true }),
+      ]),
+    )
+  }
+  pulseUsers += 1
+  if (pulseUsers === 1) pulseLoop?.start()
+  return pulseValue
+}
+
+function releasePulse() {
+  pulseUsers = Math.max(0, pulseUsers - 1)
+  if (pulseUsers === 0) pulseLoop?.stop()
 }
 
 export function Skeleton({
@@ -29,22 +70,18 @@ export function Skeleton({
   radius?: number
   style?: StyleProp<ViewStyle>
 }) {
-  const opacity = useRef(new Animated.Value(0.4)).current
+  // Retained once per mount so the first frame already animates; released on
+  // unmount (the app has no StrictMode double-invocation to compensate for).
+  const [opacity] = useState<Animated.Value>(retainPulse)
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.85, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-      ]),
-    )
-    loop.start()
-    return () => loop.stop()
-  }, [opacity])
+  useEffect(() => () => releasePulse(), [])
 
   return (
     <Animated.View
-      style={[{ width: width ?? '100%', height, borderRadius: radius, backgroundColor: colors.muted, opacity }, style]}
+      style={[
+        { width: width ?? '100%', height, borderRadius: radius, backgroundColor: colors.surfaceContainerHigh, opacity },
+        style,
+      ]}
     />
   )
 }
@@ -63,12 +100,7 @@ export function Chip({ active, disabled, style, children, ...rest }: ChipProps) 
       accessibilityState={{ selected: Boolean(active), disabled }}
       disabled={disabled}
       {...rest}
-      style={[
-        styles.chip,
-        active && styles.chipActive,
-        disabled && styles.chipDisabled,
-        style,
-      ]}>
+      style={[styles.chip, active && styles.chipActive, disabled && styles.chipDisabled, style]}>
       <Text numberOfLines={1} style={[styles.chipLabel, active && styles.chipLabelActive]}>
         {children}
       </Text>
@@ -77,24 +109,18 @@ export function Chip({ active, disabled, style, children, ...rest }: ChipProps) 
 }
 
 const styles = StyleSheet.create({
-  separator: { height: 1, backgroundColor: colors.border, width: '100%' },
+  separator: { height: 1, backgroundColor: colors.outlineVariant, width: '100%' },
   chip: {
+    minHeight: 36,
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.overlay,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.none,
+    borderColor: colors.outline,
+    backgroundColor: 'transparent',
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
   },
-  chipActive: { borderColor: colors.foreground, backgroundColor: colors.foreground },
-  chipDisabled: { opacity: 0.6 },
-  chipLabel: {
-    fontFamily: fonts.mono,
-    fontSize: 10.4,
-    lineHeight: 14,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.mutedForeground,
-  },
-  chipLabelActive: { color: colors.background },
+  chipActive: { borderColor: colors.secondaryContainer, backgroundColor: colors.secondaryContainer },
+  chipDisabled: { opacity: 0.38 },
+  chipLabel: { ...text.labelMedium, color: colors.onSurfaceVariant },
+  chipLabelActive: { color: colors.onSecondaryContainer },
 })

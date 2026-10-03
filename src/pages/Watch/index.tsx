@@ -61,7 +61,7 @@ import {
   selectWatchedEpisodes,
   useHistoryStore,
 } from '@/stores/historyStore'
-import { colors, fonts, layout, spacing, text } from '@/theme'
+import { colors, fonts, layout, radii, spacing, text } from '@/theme'
 
 import { EpisodeList } from './EpisodeList'
 import {
@@ -78,6 +78,7 @@ import { Player, ResolvingSource } from './Player'
 import { SourceSelector } from './SourceSelector'
 import { SubtitleSelector } from './SubtitleSelector'
 import type { SubtitleSize } from './subtitleScale'
+import { pickInitialSubtitle } from './subtitlePick'
 import { useExtensionSources, useExtensionSubtitles } from './useExtensionSources'
 
 // Side-effect: bootstraps the i18next singleton (web: `main.tsx`).
@@ -87,7 +88,7 @@ type Route = NativeStackScreenProps<RootStackParamList, 'Watch'>['route']
 type Nav = NativeStackNavigationProp<RootStackParamList>
 
 export function WatchPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const route = useRoute<Route>()
   const navigation = useNavigation<Nav>()
   const { width } = useWindowDimensions()
@@ -160,15 +161,33 @@ export function WatchPage() {
     [subsView.subtitles, selected],
   )
 
-  // Honor a provider-flagged default track once per episode.
+  /**
+   * The viewer's language (`tr`, `en`, `ru`, possibly tagged `tr-TR`).
+   * Re-read every render so the auto-pick below follows a language change.
+   */
+  const appLanguage = i18n.resolvedLanguage ?? i18n.language ?? 'en'
+
+  // Pick the track the viewer is most likely to want: their own language
+  // first, then whatever the provider flagged, then nothing — see
+  // `./subtitlePick` for the rules and why they are in that order.
   useEffect(() => {
     if (appliedDefaultSub.current) return
-    const preferred = subtitles.find((sub) => sub.default)
+    const preferred = pickInitialSubtitle(subtitles, appLanguage)
     if (preferred) {
-      setActiveSubtitle(preferred.key)
+      setActiveSubtitle(preferred)
       appliedDefaultSub.current = true
     }
-  }, [subtitles])
+  }, [subtitles, appLanguage])
+
+  /**
+   * Stop auto-picking the moment the viewer chooses for themselves. Without
+   * this, a later `subtitles` change (a different source resolving) would
+   * silently override a deliberate pick.
+   */
+  const handleSubtitleChange = useCallback((key: string | null) => {
+    appliedDefaultSub.current = true
+    setActiveSubtitle(key)
+  }, [])
 
   /* ---------------- history ---------------- */
 
@@ -347,7 +366,7 @@ export function WatchPage() {
         onProgressChange={handleProgress}
         onRequestNext={hasNext ? () => goTo(episode + 1) : undefined}
         onSkipSecondsChange={handleSkipSeconds}
-        onSubtitleChange={setActiveSubtitle}
+        onSubtitleChange={handleSubtitleChange}
         onSubtitleDelayChange={setSubtitleDelay}
         onSubtitleSizeChange={handleSubtitleSize}
         skipSeconds={skipSeconds}
@@ -726,9 +745,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceContainer,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -746,14 +764,13 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     gap: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.md,
   },
   infoPoster: { flexShrink: 0 },
   /** `w-16 border border-border` — posters are 2:3, so 64 × 96. */
-  poster: { width: 64, borderWidth: 1, borderColor: colors.border },
+  poster: { width: 64, borderRadius: radii.sm, overflow: 'hidden' },
   infoBody: { flex: 1, minWidth: 0, gap: spacing.s1_5 },
   /** `truncate text-sm font-medium` */
   infoTitle: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, color: colors.foreground },
@@ -764,8 +781,8 @@ const styles = StyleSheet.create({
   /** `line-clamp-2 text-xs leading-relaxed text-muted-foreground` */
   infoSynopsis: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.mutedForeground },
 
-  /** `border border-border bg-card` around the episode list. */
-  episodeCard: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  /** Surface container wrapping the episode list. */
+  episodeCard: { borderRadius: radii.lg, backgroundColor: colors.surfaceContainer, overflow: 'hidden' },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -778,10 +795,10 @@ const styles = StyleSheet.create({
   /** `flex items-center justify-between font-mono text-[0.65rem]` */
   pagination: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   pageButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceContainerHigh,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   pageButtonDisabled: { opacity: 0.4 },
   /** `uppercase` mono micro-button. */
@@ -800,9 +817,8 @@ const styles = StyleSheet.create({
   metaNoteValue: { color: colors.foreground },
 
   notes: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(17,17,17,0.6)',
+    borderRadius: radii.md,
+    backgroundColor: colors.surfaceContainerLow,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     gap: spacing.xs,

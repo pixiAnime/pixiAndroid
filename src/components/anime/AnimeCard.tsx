@@ -2,14 +2,14 @@
  * AnimeCard — poster + title + meta. Opens the detail screen.
  * Used in rows, grids, search results, recommendations, lists.
  */
-import { useContext, useId } from 'react'
+import { memo, useContext, useId } from 'react'
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { NavigationContainerRefContext } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 
 import type { JikanAnime } from '@/api/jikan/types'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import { SafeImage } from './SafeImage'
 import { ScoreBadge } from './badges'
@@ -23,13 +23,20 @@ interface AnimeCardProps {
   style?: StyleProp<ViewStyle>
   /** Show rank number (top lists). */
   rank?: number
-  /** Eager-load above-the-fold cards (web hint — kept for API parity). */
+  /* * Eager-load above-the-fold cards (web hint — kept for API parity). */
   priority?: boolean
   /** Overrides the default `AnimeDetail` navigation. */
   onPress?: () => void
 }
 
-export function AnimeCard({ anime, style, rank, priority, onPress }: AnimeCardProps) {
+/**
+ * Memoized: Home alone renders seven rows × 18 cards and re-renders on every
+ * query notification (each of its eight subscriptions fires while a
+ * background refetch lands). Props are stable — `anime` is the query-cache
+ * object, `style` a `StyleSheet` reference — so React skips all 144 card
+ * subtrees unless the data itself changed.
+ */
+export const AnimeCard = memo(function AnimeCard({ anime, style, rank, priority, onPress }: AnimeCardProps) {
   const { t } = useTranslation()
   const title = anime.title_english ?? anime.title
   const navigation = useContext(NavigationContainerRefContext)
@@ -104,19 +111,20 @@ export function AnimeCard({ anime, style, rank, priority, onPress }: AnimeCardPr
       )}
     </Pressable>
   )
-}
+})
 
 const styles = StyleSheet.create({
   root: { flexDirection: 'column', gap: spacing.sm },
   poster: {
     position: 'relative',
     overflow: 'hidden',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.muted,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
   },
-  /** `group-hover:border-foreground/30` */
-  posterActive: { borderColor: 'rgba(252,252,252,0.3)' },
+  /** Hover/press emphasis on a touch target. */
+  posterActive: { borderColor: colors.outline },
   scoreRow: {
     position: 'absolute',
     left: 0,
@@ -131,7 +139,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    backgroundColor: 'rgba(10,10,10,0.9)',
+    borderBottomRightRadius: radii.md,
+    backgroundColor: colors.surfaceContainerHighest,
     paddingHorizontal: spacing.s1_5,
     paddingVertical: spacing.half,
   },
@@ -146,10 +155,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    borderLeftWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(10,10,10,0.9)',
+    borderBottomLeftRadius: radii.md,
+    backgroundColor: colors.surfaceContainerHighest,
     paddingHorizontal: spacing.s1_5,
     paddingVertical: spacing.half,
   },
@@ -162,7 +169,7 @@ const styles = StyleSheet.create({
     color: colors.foreground,
   },
   metaBlock: { flexDirection: 'column', gap: spacing.half, minWidth: 0 },
-  title: { ...text.cardTitle, color: colors.foreground },
+  title: { ...text.cardTitle, color: colors.onSurface },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s1_5 },
-  metaText: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, color: colors.mutedForeground },
+  metaText: { fontFamily: fonts.mono, fontSize: 11, lineHeight: 15, color: colors.onSurfaceVariant },
 })

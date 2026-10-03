@@ -26,7 +26,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { formatRelativeTime, padEpisode } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import { selectContinueWatching, useHistoryStore } from '@/stores/historyStore'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import '@/i18n'
 
@@ -65,7 +65,7 @@ export function HistoryPage() {
                     title: entry.titleEnglish ?? entry.title,
                   })}
                   onPress={() => navigation.navigate('AnimeDetail', { malId: entry.animeId })}
-                  style={styles.posterButton}>
+                  style={({ pressed }) => [styles.posterButton, pressed && styles.posterPressed]}>
                   <SafeImage
                     src={entry.posterUrl}
                     alt=""
@@ -75,15 +75,26 @@ export function HistoryPage() {
                 </Pressable>
 
                 <View style={styles.body}>
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={() =>
-                      navigation.navigate('AnimeDetail', { malId: entry.animeId })
-                    }>
-                    <Text numberOfLines={1} style={styles.rowTitle}>
-                      {entry.titleEnglish ?? entry.title}
-                    </Text>
-                  </Pressable>
+                  {/* Title takes the row; the remove action trails at the top. */}
+                  <View style={styles.titleRow}>
+                    <Pressable
+                      accessibilityRole="link"
+                      onPress={() =>
+                        navigation.navigate('AnimeDetail', { malId: entry.animeId })
+                      }
+                      style={styles.titleLink}>
+                      <Text numberOfLines={1} style={styles.rowTitle}>
+                        {entry.titleEnglish ?? entry.title}
+                      </Text>
+                    </Pressable>
+                    <Button
+                      variant="ghost"
+                      size="iconSm"
+                      accessibilityLabel={t('history.removeAria', { title: entry.title })}
+                      onPress={() => removeEntry(entry.animeId)}>
+                      <Trash2 size={15} color={colors.foreground} strokeWidth={1.6} />
+                    </Button>
+                  </View>
 
                   <Text style={styles.episode}>
                     {t('common.episode', { num: padEpisode(entry.episode) })}
@@ -122,28 +133,22 @@ export function HistoryPage() {
                       />
                     </View>
                   ) : null}
-                </View>
 
-                <View style={styles.actions}>
-                  <Button
-                    size="sm"
-                    onPress={() =>
-                      navigation.navigate('Watch', {
-                        malId: entry.animeId,
-                        episode: entry.episode,
-                      })
-                    }>
-                    <Play size={13} color={colors.primaryForeground} strokeWidth={1.6} />
-                    <Text style={styles.ctaLabel}>{t('common.continue')}</Text>
-                    <ChevronRight size={13} color={colors.primaryForeground} strokeWidth={1.6} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="iconSm"
-                    accessibilityLabel={t('history.removeAria', { title: entry.title })}
-                    onPress={() => removeEntry(entry.animeId)}>
-                    <Trash2 size={15} color={colors.foreground} strokeWidth={1.6} />
-                  </Button>
+                  {/* Primary action spans the card's bottom edge, trailing. */}
+                  <View style={styles.ctaRow}>
+                    <Button
+                      size="sm"
+                      onPress={() =>
+                        navigation.navigate('Watch', {
+                          malId: entry.animeId,
+                          episode: entry.episode,
+                        })
+                      }>
+                      <Play size={13} color={colors.primaryForeground} strokeWidth={1.6} />
+                      <Text style={styles.ctaLabel}>{t('common.continue')}</Text>
+                      <ChevronRight size={13} color={colors.primaryForeground} strokeWidth={1.6} />
+                    </Button>
+                  </View>
                 </View>
               </View>
             ))}
@@ -214,18 +219,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.md,
   },
   posterButton: { flexShrink: 0 },
-  /** `w-12` on a phone (`sm:w-14` never applies here). */
-  poster: { width: 48, borderWidth: 1, borderColor: colors.border },
-  body: { flex: 1, minWidth: 0 },
+  posterPressed: { opacity: 0.72 },
+  /** Larger poster (`w-14`) with the card's own corner scale. */
+  poster: { width: 56, borderRadius: radii.md, overflow: 'hidden' },
+  body: { flex: 1, minWidth: 0, gap: spacing.xs },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  titleLink: { flex: 1, minWidth: 0 },
   rowTitle: {
-    fontFamily: fonts.medium,
-    fontSize: 14,
+    fontFamily: fonts.semibold,
+    fontSize: 15,
     lineHeight: 20,
     color: colors.foreground,
   },
@@ -235,15 +244,13 @@ const styles = StyleSheet.create({
     fontSize: 11.2,
     lineHeight: 16,
     color: colors.mutedForeground,
-    marginTop: spacing.half,
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    columnGap: spacing.lg,
+    columnGap: spacing.md,
     rowGap: spacing.xs,
-    marginTop: spacing.s1_5,
   },
   /** `font-mono text-[0.65rem] text-muted-foreground` — not uppercased. */
   meta: {
@@ -252,17 +259,21 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     color: colors.mutedForeground,
   },
-  /** `h-0.5 w-full max-w-xs bg-muted` */
+  /**
+   * Full-width track in a tonal step above the card — `colors.muted` is the
+   * card's own background, so the old track was invisible except for the fill.
+   */
   progressTrack: {
-    height: 2,
+    height: 3,
     width: '100%',
-    maxWidth: 320,
-    backgroundColor: colors.muted,
-    marginTop: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceContainerHighest,
+    marginTop: spacing.half,
+    overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: colors.foreground },
+  progressFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.primary },
 
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.s1_5, flexShrink: 0 },
+  ctaRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingTop: spacing.xs },
   /** Label on the white (default-variant) Continue button. */
   ctaLabel: {
     fontFamily: fonts.medium,

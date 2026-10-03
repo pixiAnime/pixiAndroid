@@ -15,7 +15,7 @@ import { Layers } from 'lucide-react-native'
 
 import { Button } from '@/components/ui/Button'
 import type { FlatSource } from '@/extensions'
-import { colors, fonts, spacing } from '@/theme'
+import { colors, fonts, radii, spacing } from '@/theme'
 
 interface SourceSelectorProps {
   sources: FlatSource[]
@@ -107,8 +107,8 @@ const styles = StyleSheet.create({
   /** `font-mono text-[0.65rem] text-muted-foreground` — sentence case, not upper. */
   headMeta: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, color: colors.mutedForeground },
   groups: { gap: spacing.sm },
-  /** `border border-border bg-card p-3` */
-  group: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: spacing.md },
+  /** Source-provider group surface. */
+  group: { borderRadius: radii.lg, backgroundColor: colors.surfaceContainer, padding: spacing.md },
   /** `mb-2` + inline icon */
   groupHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
   groupName: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.mutedForeground },

@@ -53,8 +53,8 @@ export function FavoriteButton({
 }
 
 const styles = StyleSheet.create({
-  /** `active:border-foreground/50 text-foreground` (all three variants are fg on transparent). */
-  active: { borderColor: 'rgba(252,252,252,0.5)' },
+  /** Selected state: a brighter outline on the transparent variants. */
+  active: { borderColor: colors.primary },
   label: {
     fontFamily: fonts.medium,
     fontSize: 14,

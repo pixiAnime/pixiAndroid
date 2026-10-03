@@ -10,7 +10,7 @@
  * installed, so every `bg-linear-to-*` scrim is drawn with
  * `react-native-svg`'s `LinearGradient` over `StyleSheet.absoluteFill`.
  */
-import { useContext, useId } from 'react'
+import { memo, useContext, useId } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native'
 import { NavigationContainerRefContext } from '@react-navigation/native'
 import { Info, Play, Star } from 'lucide-react-native'
@@ -20,7 +20,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import type { JikanAnime } from '@/api/jikan/types'
 import { Button } from '@/components/ui/Button'
 import { formatDate, formatScore } from '@/lib/format'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import { SafeImage } from './SafeImage'
 
@@ -96,7 +96,12 @@ function Scrim({
   )
 }
 
-export function Hero({ anime, style, onPress, onWatchPress }: HeroProps) {
+/**
+ * Memoized: Home re-renders on every query notification; `anime` is the
+ * query-cache object, so the hero (two SVG scrims + image + actions) is
+ * skipped unless the featured item actually changed.
+ */
+export const Hero = memo(function Hero({ anime, style, onPress, onWatchPress }: HeroProps) {
   const { t } = useTranslation()
   const { width } = useWindowDimensions()
   const wide = width >= SM_BREAKPOINT
@@ -247,16 +252,17 @@ export function Hero({ anime, style, onPress, onWatchPress }: HeroProps) {
       </View>
     </View>
   )
-}
+})
 
 const styles = StyleSheet.create({
   root: {
     position: 'relative',
     width: '100%',
     overflow: 'hidden',
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
     minHeight: 480, // `min-h-[30rem]`
   },
   rootWide: { minHeight: 544 }, // `sm:min-h-[34rem]`
@@ -279,11 +285,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   kickerBadge: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(10,10,10,0.7)',
-    paddingHorizontal: spacing.s1_5,
-    paddingVertical: spacing.half,
+    borderRadius: radii.pill,
+    backgroundColor: colors.secondaryContainer,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   kickerText: { ...text.monoSmall },
   kickerBadgeText: { ...text.monoSmall, color: colors.foreground },
@@ -308,11 +313,10 @@ const styles = StyleSheet.create({
   scoreText: { ...text.meta, fontFamily: fonts.mono, color: colors.foreground },
   genres: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s1_5 },
   genre: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'rgba(10,10,10,0.6)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.half,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceContainerHighest,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   genreText: { ...text.monoSmall, color: colors.foreground },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingTop: spacing.xs },

@@ -27,7 +27,7 @@ import { Chip, Skeleton } from '@/components/ui/Primitives'
 import { SelectField, type SelectOption } from '@/components/ui/SelectField'
 import { useBrowseAnime, useGenres } from '@/hooks/useAnimeData'
 import type { RootStackParamList } from '@/navigation/types'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 // Side-effect: bootstraps the i18next singleton (web: `main.tsx`).
 import '@/i18n'
@@ -417,12 +417,11 @@ const styles = StyleSheet.create({
     color: colors.foreground,
   },
 
-  /** Square page surface: `border border-border bg-card p-4`. */
+  /** Filter panel surface. */
   panel: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    padding: spacing.md,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
+    padding: spacing.lg,
     gap: spacing.lg,
   },
 

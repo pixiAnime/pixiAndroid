@@ -22,6 +22,7 @@
 import { useCallback, type ReactNode } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import Slider from '@react-native-community/slider'
 import type { AudioTrack } from 'react-native-video'
 
 import { colors, fonts, radii, spacing } from '@/theme'
@@ -83,6 +84,9 @@ export interface SettingsSheetProps {
   onSkipSecondsChange?: (seconds: number) => void
   holdRate: number
   onHoldRateChange?: (rate: number) => void
+  /** Output level, 0–1. Dragged live, the way any player's volume bar is. */
+  volume: number
+  onVolumeChange?: (volume: number) => void
   audioTracks: AudioTrack[]
   audioIndex: number
   onAudioTrackChange: (index: number) => void
@@ -120,6 +124,8 @@ export function SettingsSheet(props: SettingsSheetProps) {
     onSkipSecondsChange,
     holdRate,
     onHoldRateChange,
+    volume,
+    onVolumeChange,
     audioTracks,
     audioIndex,
     onAudioTrackChange,
@@ -230,6 +236,30 @@ export function SettingsSheet(props: SettingsSheetProps) {
               onPress={open('hold')}
               trailing={formatRate(holdRate)}
             />
+            {/* A slider, not a list: volume is a range, and dragging *is* the
+                control. It lives inline on this page so the level is one tap
+                from the gear, beside the other Playback rows. */}
+            {onVolumeChange ? (
+              <View style={styles.stepperRow}>
+                <Text style={styles.stepperLabel}>{playerWord('volume')}</Text>
+                <View style={styles.sliderWrap}>
+                  <Slider
+                    accessibilityLabel={playerWord('volume')}
+                    maximumTrackTintColor={colors.input}
+                    maximumValue={1}
+                    minimumTrackTintColor={colors.primary}
+                    minimumValue={0}
+                    onSlidingStart={interact}
+                    onValueChange={onVolumeChange}
+                    step={0.05}
+                    style={styles.slider}
+                    thumbTintColor={colors.primary}
+                    value={volume}
+                  />
+                  <Text style={styles.sliderValue}>{Math.round(volume * 100)}%</Text>
+                </View>
+              </View>
+            ) : null}
             {/* A stream with one audio track has nothing to choose, so the row
                 only exists when there is a real second option. */}
             {audioTracks.length > 1 ? (
@@ -500,6 +530,24 @@ const styles = StyleSheet.create({
     color: colors.foreground,
   },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  /** The volume slider: label left, rail + percentage right, on one row. */
+  sliderWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  slider: { flex: 1, height: 40, maxWidth: 200 },
+  sliderValue: {
+    minWidth: 36,
+    textAlign: 'right',
+    fontFamily: fonts.mono,
+    fontSize: 11.2,
+    lineHeight: 16,
+    color: colors.mutedForeground,
+    fontVariant: ['tabular-nums'],
+  },
   /**
    * 44 × 36 rather than the popover's 32 × 24. The buttons sit side by side, so
    * they keep a comfortable width but are allowed to be shorter than they are

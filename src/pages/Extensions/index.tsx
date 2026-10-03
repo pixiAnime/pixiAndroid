@@ -34,6 +34,9 @@ import { Badge } from '@/components/ui/Badge'
 import { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
+import { StatusBanner } from '@/components/ui/Status'
+import { Switch } from '@/components/ui/Switch'
+import { useConnectionStatus } from '@/hooks/useConnectionStatus'
 import {
   compareVersions,
   inspectExtension,
@@ -44,7 +47,7 @@ import {
   type InspectedExtension,
 } from '@/extensions'
 import { localizeExtensionMessage } from '@/i18n'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import '@/i18n'
 
@@ -186,6 +189,7 @@ function metaLine(manifest: ExtensionManifest): string {
 
 export function ExtensionsPage() {
   const { t } = useTranslation()
+  const { status } = useConnectionStatus()
   const records = useExtensionRegistry((s) => s.records)
   const hydrated = useExtensionRegistry((s) => s.hydrated)
   const upsert = useExtensionRegistry((s) => s.upsert)
@@ -364,6 +368,9 @@ export function ExtensionsPage() {
         ) : null}
       </View>
 
+      {/* Connection status — the washed-out states explain why installs/playback may stall. */}
+      {status !== 'running' ? <StatusBanner status={status} /> : null}
+
       {/* ---------------- install form ---------------- */}
       {formOpen ? (
         <View style={styles.form}>
@@ -496,16 +503,12 @@ export function ExtensionsPage() {
                         <Text style={styles.extTitle}>{record.manifest.name}</Text>
                         <Text style={styles.metaMono}>{metaLine(record.manifest)}</Text>
                       </View>
-                      <LBtn
-                        label={record.enabled ? t('extensions.enabled') : t('extensions.disabled')}
-                        variant={record.enabled ? 'secondary' : 'outline'}
-                        size="xs"
+                      <Switch
+                        value={record.enabled}
                         accessibilityLabel={
                           record.enabled ? t('extensions.enabled') : t('extensions.disabled')
                         }
-                        accessibilityRole="switch"
-                        accessibilityState={{ checked: record.enabled }}
-                        onPress={() => setEnabled(record.id, !record.enabled)}
+                        onValueChange={(next) => setEnabled(record.id, next)}
                       />
                     </View>
 
@@ -640,17 +643,18 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   headerCopy: { gap: spacing.xs, flexShrink: 1 },
-  pageTitle: { ...text.pageHeading, fontSize: 20, lineHeight: 28, letterSpacing: -0.5 },
+  pageTitle: { ...text.pageHeading, color: colors.onSurface, fontSize: 20, lineHeight: 28, letterSpacing: -0.5 },
   pageDesc: { ...text.body, color: colors.mutedForeground, maxWidth: 672 },
   sectionTitle: { ...text.sectionTitle, color: colors.foreground },
 
   /* install form */
   form: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: radii.lg,
     padding: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   formHead: {
     flexDirection: 'row',
@@ -668,21 +672,22 @@ const styles = StyleSheet.create({
   formError: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.destructive },
   preview: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radii.lg,
     padding: spacing.md,
     gap: spacing.md,
   },
   previewHead: { flexDirection: 'row', gap: spacing.md },
   previewCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
-  icon: { width: 48, flexShrink: 0, borderWidth: 1, borderColor: colors.border },
+  icon: { width: 48, flexShrink: 0, borderRadius: radii.md, overflow: 'hidden' },
   extTitle: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, color: colors.foreground },
   metaMono: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, color: colors.mutedForeground },
   desc: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.mutedForeground },
 
   /* notice + list */
   notice: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 17, color: colors.mutedForeground },
-  listSection: { gap: spacing.md },
+  listSection: { gap: spacing.lg },
   listHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -692,8 +697,9 @@ const styles = StyleSheet.create({
   listCount: { ...text.monoSmall, letterSpacing: 0, textTransform: 'none' },
   loadingPanel: {
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: radii.lg,
     paddingVertical: spacing.xxl,
     flexDirection: 'row',
     alignItems: 'center',
@@ -708,11 +714,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: radii.lg,
     padding: spacing.lg,
   },
-  cardBody: { flex: 1, minWidth: 0, gap: spacing.sm },
+  cardBody: { flex: 1, minWidth: 0, gap: spacing.md },
   cardHead: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -725,15 +732,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: spacing.s1_5,
+    gap: spacing.sm,
   },
   badgeMuted: { color: colors.mutedForeground },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: spacing.s1_5,
-    paddingTop: 2,
+    gap: spacing.sm,
+    paddingTop: spacing.xs,
   },
   updateRow: {
     flexDirection: 'row',

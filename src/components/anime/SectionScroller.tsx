@@ -6,9 +6,25 @@
  * and no CSS scroll-snap, so snapping is approximated with `decelerationRate`
  * while the arrow controls — the web's hover affordance — stay visible
  * whenever they are on screen (`sm:` and up), since touch has no hover.
+ *
+ * The row is a *windowed* horizontal `FlatList`, not a plain `ScrollView`:
+ * mounting 18 cards × 8 rows (plus their poster images) in one burst is what
+ * made screen transitions stutter, especially on Home. The visible cards
+ * mount in the first batch and the rest stream in as the row scrolls — the
+ * content is identical, only the mount is deferred. Children must therefore
+ * be keyed card elements (AnimeSection is the only caller).
  */
-import { useCallback, useRef, useState, type ReactNode } from 'react'
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from 'react-native'
+import {
+  Children,
+  isValidElement,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
+import { FlatList, StyleSheet, Text, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native'
 import { ChevronLeft, ChevronRight } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 
@@ -28,8 +44,16 @@ interface SectionScrollerProps {
   style?: StyleProp<ViewStyle>
 }
 
+type RowItem = ReactElement
+
 /** Tailwind `sm:` — the web hides the subtitle and arrows below it. */
 const SM_BREAKPOINT = 640
+/** Cards painted before the first frame (~3 phone screens' worth of buffer). */
+const INITIAL_CARDS = 6
+/** Mounts per batch after the first — keeps refills off the transition frame. */
+const BATCH_CARDS = 6
+/** Rendered window in viewport-widths (~4 screens of cards kept alive). */
+const WINDOW_VIEWPORTS = 4
 
 export function SectionScroller({
   title,
@@ -41,9 +65,17 @@ export function SectionScroller({
   const { t } = useTranslation()
   const { width } = useWindowDimensions()
   const wide = width >= SM_BREAKPOINT
-  const scrollerRef = useRef<ScrollViewInstance>(null)
+  const scrollerRef = useRef<FlatList<RowItem>>(null)
   const offsetRef = useRef(0)
   const [viewportWidth, setViewportWidth] = useState(0)
+
+  // Only card elements reach this row (AnimeSection maps them). Anything
+  // else — a stray text node — would silently drop, so the filter is
+  // deliberate rather than a defensive `as`.
+  const data = useMemo(
+    () => Children.toArray(children).filter(isValidElement),
+    [children],
+  )
 
   const scrollBy = useCallback(
     (direction: 1 | -1) => {
@@ -51,7 +83,7 @@ export function SectionScroller({
       const amount = Math.max(viewportWidth * 0.8, 240)
       const target = Math.max(0, offsetRef.current + direction * amount)
       offsetRef.current = target
-      scrollerRef.current?.scrollTo({ x: target, animated: true })
+      scrollerRef.current?.scrollToOffset({ animated: true, offset: target })
     },
     [viewportWidth],
   )
@@ -89,21 +121,26 @@ export function SectionScroller({
         </View>
       </View>
 
-      <ScrollView
+      <FlatList
         accessibilityLabel={title}
         accessibilityRole="list"
         contentContainerStyle={{ gap: wide ? spacing.lg : spacing.md, paddingBottom: spacing.xs }}
+        data={data}
         decelerationRate="fast"
         horizontal
+        initialNumToRender={INITIAL_CARDS}
+        keyExtractor={(item, index) => String(item.key ?? index)}
+        maxToRenderPerBatch={BATCH_CARDS}
         onLayout={(event) => setViewportWidth(event.nativeEvent.layout.width)}
         onScroll={(event) => {
           offsetRef.current = event.nativeEvent.contentOffset.x
         }}
         ref={scrollerRef}
+        renderItem={({ item }) => item}
         scrollEventThrottle={32}
-        showsHorizontalScrollIndicator={false}>
-        {children}
-      </ScrollView>
+        showsHorizontalScrollIndicator={false}
+        windowSize={WINDOW_VIEWPORTS}
+      />
     </View>
   )
 }

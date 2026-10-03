@@ -35,13 +35,15 @@ test('the documented timings cannot collide: the tap window opens after the hold
   )
 })
 
-test('a lone tap toggles playback, but only once the window closes', () => {
+test('a lone tap toggles the chrome, but only once the window closes', () => {
+  // A single tap must never play/pause — that is the play button's job — so it
+  // resolves to `chrome`, the show/hide of the controls.
   const { actions, state } = run([
     { type: 'down', zone: 'forward' },
     { type: 'up' },
     { type: 'expire' },
   ])
-  assert.deepEqual(actions, [{ type: 'toggle' }])
+  assert.deepEqual(actions, [{ type: 'chrome' }])
   assert.equal(state.phase, 'idle')
 })
 

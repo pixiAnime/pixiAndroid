@@ -47,7 +47,7 @@ import { formatDateRange, formatNumber, formatScore, padEpisode } from '@/lib/fo
 import type { RootStackParamList } from '@/navigation/types'
 import { useHistoryStore } from '@/stores/historyStore'
 import { useRecentlyViewedStore } from '@/stores/recentlyViewedStore'
-import { colors, fonts, layout, spacing, text } from '@/theme'
+import { colors, fonts, layout, radii, spacing, text } from '@/theme'
 
 // Side-effect: bootstraps the i18next singleton (web: `main.tsx`).
 import '@/i18n'
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   /** `mx-auto w-44 sm:w-52 lg:mx-0 lg:w-full` */
   posterCol: { gap: spacing.md },
   posterColCentered: { alignItems: 'center' },
-  poster: { width: '100%', borderWidth: 1, borderColor: colors.border },
+  poster: { width: '100%', borderRadius: radii.lg, overflow: 'hidden' },
   headBody: { flexDirection: 'column', gap: spacing.lg, minWidth: 0 },
   /** `1fr` of `lg:grid-cols-[16rem_1fr]` — only where the width is definite. */
   headBodyWide: { flex: 1 },
@@ -654,25 +654,23 @@ const styles = StyleSheet.create({
   /** `text-sm leading-relaxed text-muted-foreground max-w-3xl` */
   synopsis: { ...text.body, color: colors.mutedForeground, maxWidth: 768 },
 
-  /** `border bg-card p-4 grid gap-x-8 gap-y-3` */
+  /** Metadata grid. */
   infoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     columnGap: spacing.xl,
-    rowGap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    rowGap: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.lg,
   },
 
-  /** `border bg-card p-4 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between` */
+  /** Watch call-to-action card. */
   watchCard: {
     flexDirection: 'column',
     gap: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.lg,
   },
   watchCardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -695,13 +693,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexShrink: 0,
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.sm,
   },
-  /** `w-10 shrink-0 border` — keeps the web's 2:3 box (40 × 60). */
-  charImage: { width: 40, flexShrink: 0, borderWidth: 1, borderColor: colors.border },
+  /** `w-10 shrink-0` — keeps the web's 2:3 box (40 × 60). */
+  charImage: { width: 40, flexShrink: 0, borderRadius: radii.sm, overflow: 'hidden' },
   charBody: { flex: 1, minWidth: 0 },
   /** `truncate text-xs font-medium` */
   charName: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 16, color: colors.foreground },
@@ -717,20 +714,18 @@ const styles = StyleSheet.create({
   },
 
   /* ---------------- related ---------------- */
-  relatedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  relatedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   /** `flex items-center gap-2 border bg-card px-2.5 py-1.5` */
   relatedChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    paddingHorizontal: 10,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surfaceContainerHigh,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.s1_5,
   },
-  /** `hover:border-foreground/40` */
-  relatedChipPressed: { borderColor: 'rgba(252,252,252,0.4)' },
+  relatedChipPressed: { opacity: 0.75 },
   relatedRelation: { ...text.monoMicro },
   /** `text-xs group-hover:underline` */
   relatedName: { ...text.bodySm, color: colors.foreground },

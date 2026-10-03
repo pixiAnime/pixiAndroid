@@ -75,5 +75,5 @@ export function ScreenLayout({
 const styles = StyleSheet.create({
   body: { flex: 1 },
   bodyGrow: { flexGrow: 1 },
-  content: { flexGrow: 1, gap: spacing.xxxl, paddingBottom: spacing.xxl },
+  content: { flexGrow: 1, gap: spacing.xxl, paddingBottom: spacing.xxl },
 })

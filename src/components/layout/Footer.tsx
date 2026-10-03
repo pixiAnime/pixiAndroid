@@ -1,11 +1,9 @@
 /**
- * Footer — `mt-16 border-t` block with the wordmark, the attribution line
+ * Footer — a top-ruled surface block with the wordmark, the attribution line
  * and the secondary nav links.
  *
- * Two lines from the web footer are intentionally absent on Android: the
- * jikan link is kept (it opens in the browser via `Linking`), but the
- * `footer.bridgeLabel {config.pixiClient.baseUrl}` line is dropped because
- * there is no bridge to address.
+ * The web's `footer.bridgeLabel {config.pixiClient.baseUrl}` line stays dropped
+ * because Android has no bridge to address.
  */
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
@@ -54,26 +52,25 @@ export function Footer() {
 }
 
 const styles = StyleSheet.create({
-  footer: { marginTop: 64, borderTopWidth: 1, borderTopColor: colors.border },
+  footer: { marginTop: spacing.huge, borderTopWidth: 1, borderTopColor: colors.outlineVariant },
   inner: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xl, gap: spacing.lg },
   brandBlock: { gap: spacing.xs },
   wordmark: {
-    fontFamily: fonts.mono,
-    fontSize: 11.2,
+    fontFamily: fonts.monoSemibold,
+    fontSize: 11,
     lineHeight: 16,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: colors.foreground,
+    color: colors.onSurface,
   },
-  meta: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.mutedForeground },
-  link: { textDecorationLine: 'underline', color: colors.mutedForeground },
-  links: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs },
+  meta: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.onSurfaceVariant },
+  link: { textDecorationLine: 'underline', color: colors.onSurfaceVariant },
+  links: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.sm },
   linkLabel: {
-    fontFamily: fonts.mono,
-    fontSize: 11.2,
+    fontFamily: fonts.medium,
+    fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: colors.mutedForeground,
+    letterSpacing: 0.3,
+    color: colors.onSurfaceVariant,
   },
 })

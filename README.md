@@ -108,8 +108,9 @@ Security and liveness are enforced on both sides:
 
 `react-native-video` (ExoPlayer) plus controls rebuilt in RN, because the web
 gets them from Vidstack's `DefaultVideoLayout`: play/pause/replay, a scrubbing
-bar, skip ±10 s, a settings menu, mute, fullscreen, the captions menu and the
-subtitle-sync chip. Container subtitles (`#EXT-X-MEDIA`, muxed MP4) are selected
+bar, skip ±10 s, a settings menu, mute, a volume slider, fullscreen, the
+captions menu and the subtitle-sync chip. Container subtitles
+(`#EXT-X-MEDIA`, muxed MP4) are selected
 by index and rendered by ExoPlayer; side-loaded tracks are drawn as an RN cue
 overlay from pure TS timing. Chrome words come from
 `src/pages/Watch/playerWords.ts`, which reuses the web `layout-words` entries
@@ -144,7 +145,8 @@ the tree before it closes the menu.
 What it configures: speed (0.5×–2×), display (fit/fill), cue size (applied to
 *both* ways subtitles are drawn — see `subtitleScale`), subtitle track and
 delay, skip distance (5/10/15/30 s — the buttons, the double-tap gesture and
-its flash all follow it), the hold rate (1.5×/2×/3×), a sleep timer and
+its flash all follow it), the hold rate (1.5×/2×/3×), the output volume (0–100%,
+dragging it up also unmutes), a sleep timer and
 autoplay of the next episode; all but speed, fit and the sleep timer persist in
 MMKV. The web's captions chip and
 sync chip are gone from the corner: on a phone that corner is where the system
@@ -175,16 +177,19 @@ equivalent for, and each is hidden when it does not apply:
   this is the one control that can only be confirmed on a real device or a
   Google Play API 26+ image.
 
-**Gestures** on the picture are YouTube's set: single tap plays/pauses, a
-double tap on either half seeks ±10 s (with a "seek backward/forward" flash), a
-press and hold runs at 2× for as long as the finger is down. The arbitration is
+**Gestures** on the picture are YouTube's set: a single tap toggles the chrome
+(show/hide the controls — it never plays or pauses, so a stray tap cannot stop a
+film; transport is the play button's job alone), a double tap on either half
+seeks ±10 s (with a "seek backward/forward" chip that slides in from the edge it
+is seeking toward and fades), a press and hold runs at 2× for as long as the
+finger is down. The arbitration is
 a pure state machine (`src/pages/Watch/tapGestures.ts`, 12 unit tests) and the
 component only translates its two timers into events. Two things it exists to
 pin down, both found on device:
 
 > **The tap window opens on release, not on press.** Armed from `down`, a
 > 280 ms window expires under a one-second press and the hold threshold never
-> fires — every long press resolved as a play/pause instead. `up` is what arms
+> fires — every long press resolved as a chrome toggle instead. `up` is what arms
 > the window; `down` arms only the hold.
 
 > **"Arm nothing" is not "clear everything".** The step's `timers` field is the

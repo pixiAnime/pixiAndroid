@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 10,
   },
-  rowSelected: { borderBottomColor: 'rgba(252,252,252,0.3)', backgroundColor: colors.muted },
+  rowSelected: { backgroundColor: colors.surfaceContainerHigh },
   rowPressed: { backgroundColor: 'rgba(25,25,25,0.5)' },
 
   /** `flex size-7 shrink-0 items-center justify-center border font-mono text-[0.7rem]` */

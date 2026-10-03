@@ -13,6 +13,7 @@
     "compat": "node scripts/extensions-compat.mjs",
     "verify": "npm run sync:check && npm run polyfills:check && npm run fixtures:check && npm run typecheck && npm run lint && npm run compat && npm test",
     "build:debug": "cd android && ./gradlew assembleDebug",
+    "build:release": "cd android && ./gradlew assembleRelease",
     "polyfills": "node scripts/build-sandbox-polyfills.mjs",
     "polyfills:check": "node scripts/build-sandbox-polyfills.mjs --check",
     "fixtures": "node scripts/build-extension-fixtures.mjs",

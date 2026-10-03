@@ -70,7 +70,7 @@ export function AnimeSection({
             <View key={index} style={styles.skeletonCard}>
               <Skeleton
                 height={Math.round(ROW_CARD_WIDTH * 1.5)}
-                radius={radii.none}
+                radius={radii.lg}
                 width={ROW_CARD_WIDTH}
               />
               <Skeleton height={14} width="80%" />

@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button'
 import { formatRelativeTime } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import { useFavoritesStore } from '@/stores/favoritesStore'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import '@/i18n'
 
@@ -123,14 +123,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.md,
   },
   posterButton: { flexShrink: 0 },
   /** `w-12` on a phone (`sm:w-14` never applies here). */
-  poster: { width: 48, borderWidth: 1, borderColor: colors.border },
+  poster: { width: 48, borderRadius: radii.sm, overflow: 'hidden' },
   body: { flex: 1, minWidth: 0, gap: spacing.half },
   rowTitle: {
     fontFamily: fonts.medium,

@@ -43,7 +43,11 @@
  *    was terminal, but a mobile stream failure is usually transient.
  *  - The web's fit/fill toggle (`object-fit`) has no Vidstack word, so this
  *    port draws it under three words of its own in `./playerWords`; speed and
- *    mute reuse the layout's own `Speed` / `Mute` / `Unmute`.
+ *    mute reuse the layout's own `Speed` / `Mute` / `Unmute`, and the output
+ *    level gains a slider the layout never had (Android has no per-app volume).
+ *  - A single tap on the picture toggles the chrome rather than playing or
+ *    pausing: transport is the play button's job alone, so a stray tap can
+ *    never pause a film (Vidstack's default single-tap does play/pause).
  *  - There is no autoplay (the web `MediaPlayer` has none either), and the
  *    player pauses while the app is backgrounded (`AppState`) without ever
  *    resuming on its own after the user paused.
@@ -101,6 +105,7 @@ import { EpisodesSheet } from './player/sheet/EpisodesSheet'
 import { SettingsSheet, type CaptionEntry } from './player/sheet/SettingsSheet'
 import { ErrorState } from './player/states/ErrorState'
 import { LoadingState } from './player/states/LoadingState'
+import { readVolume, writeVolume } from './playerPrefs'
 import { playerWord } from './playerWords'
 import type { SettingsPage } from './settingsMenu'
 import { cueMetrics, type SubtitleSize } from './subtitleScale'
@@ -301,6 +306,11 @@ export function Player({
   const { fullscreen, setFullscreen } = useFullscreenChrome()
   const [rate, setRate] = useState(1)
   const [muted, setMuted] = useState(false)
+  /**
+   * Output level 0–1, remembered between sessions (see `playerPrefs`). It is
+   * the level `muted` silences; unmuting restores whatever this holds.
+   */
+  const [volume, setVolume] = useState(() => readVolume())
   /** false = fit the whole frame (`contain`), true = fill the screen (`cover`). */
   const [fillMode, setFillMode] = useState(false)
   /** True while a press-and-hold is overriding the chosen rate with 2×. */
@@ -638,6 +648,18 @@ export function Player({
     rateRef.current = next
     setRate(next)
   }, [])
+  /**
+   * The volume slider. Persisted on every tick — MMKV writes are cheap and the
+   * alternative is losing the level if the app is killed mid-drag — and any
+   * level above zero counts as "not muted", so nudging the rail up is the same
+   * gesture as unmuting.
+   */
+  const handleVolumeChange = useCallback((next: number) => {
+    const clamped = Math.max(0, Math.min(1, next))
+    setVolume(clamped)
+    writeVolume(clamped)
+    if (clamped > 0) setMuted(false)
+  }, [])
   const handleSleepChange = useCallback((minutes: number) => {
     setClock(Date.now())
     setSleepAt(minutes === 0 ? null : Date.now() + minutes * 60_000)
@@ -662,9 +684,11 @@ export function Player({
   /* ---------------- surface gestures ---------------- */
 
   /**
-   * YouTube's gesture set — single tap plays/pauses, a double tap on either
-   * half seeks ±10 s, a press and hold runs at 2× for as long as it is held.
-   * The arbitration itself is the pure `tapGestures` machine; this is only the
+   * YouTube's gesture set — a single tap toggles the chrome, a double tap on
+   * either half seeks ±10 s, a press and hold runs at 2× for as long as it is
+   * held. The single tap deliberately does *not* play/pause: that is the play
+   * button's job, so a stray tap on the picture can never pause a film. The
+   * arbitration itself is the pure `tapGestures` machine; this is only the
    * timer plumbing that turns it into taps.
    */
   const gestureRef = useRef<GestureState>(IDLE)
@@ -684,12 +708,15 @@ export function Player({
 
   const runGestureAction = useCallback(
     (action: SurfaceAction) => {
-      revealControls()
-      if (action.type === 'toggle') {
-        closeSettings()
-        togglePlayback()
+      if (action.type === 'chrome') {
+        // A lone tap flips the chrome — never the transport. A paused player
+        // keeps its controls up (the auto-hide effect pins them), so the only
+        // meaningful tap there is a reveal.
+        if (paused) revealControls()
+        else setControlsVisible((visible) => !visible)
         return
       }
+      revealControls()
       if (action.type === 'boost') {
         setBoosting(true)
         setRate(holdRate)
@@ -705,7 +732,7 @@ export function Player({
       flashTokenRef.current += 1
       setSkipFlash({ direction: action.zone, token: flashTokenRef.current })
     },
-    [closeSettings, holdRate, revealControls, skipBy, skipSeconds, togglePlayback],
+    [holdRate, paused, revealControls, skipBy, skipSeconds],
   )
 
   const sendGesture = useCallback(
@@ -832,24 +859,35 @@ export function Player({
    * second, hard-coded 10 s step here, so a viewer who had set "skip 15s" got
    * a button that said 15 and moved 10.
    */
-  const handleSeekAction = useCallback(
+  const handleSurfaceAction = useCallback(
     (event: AccessibilityActionEvent) => {
-      const direction = event.nativeEvent.actionName === 'increment' ? 1 : -1
+      const name = event.nativeEvent.actionName
+      // `activate` is the screen reader's "double tap" on the picture. Since a
+      // touch tap only flips the chrome now, transport has to stay reachable:
+      // activating the picture plays/pauses, as it always did for TalkBack.
+      if (name === 'activate') {
+        togglePlayback()
+        return
+      }
+      const direction = name === 'increment' ? 1 : -1
       skipBy(direction * skipSeconds)
     },
-    [skipBy, skipSeconds],
+    [skipBy, skipSeconds, togglePlayback],
   )
 
   /**
-   * The picture doubles as the seek control for a screen reader: it cannot
-   * double-tap, so increment/decrement is how it skips.
+   * The picture doubles as the transport and seek control for a screen reader:
+   * it cannot double-tap the picture for a skip, and a touch tap no longer
+   * reaches the play button, so `activate` plays/pauses while
+   * increment/decrement skips.
    */
   const surfaceAccessibilityActions = useMemo(
     () => [
+      { name: 'activate', label: paused ? playerWord('play') : playerWord('pause') },
       { name: 'increment', label: `+${skipSeconds}s` },
       { name: 'decrement', label: `−${skipSeconds}s` },
     ],
-    [skipSeconds],
+    [paused, skipSeconds],
   )
 
   const handleLoad = useCallback((data: OnLoadData) => {
@@ -941,6 +979,7 @@ export function Player({
           paused={paused}
           rate={rate}
           muted={muted}
+          volume={volume}
           resizeMode={fillMode ? 'cover' : 'contain'}
           progressUpdateInterval={250}
           enterPictureInPictureOnLeave={false}
@@ -963,32 +1002,21 @@ export function Player({
       ) : null}
 
       {/*
-        Gesture target: single tap plays/pauses, double tap on either half seeks
-        ±10 s, press and hold runs at 2× (the arbitration is `./tapGestures`).
+        Gesture target: a single tap toggles the chrome (never play/pause), a
+        double tap on either half seeks ±10 s, and a press and hold runs at 2×
+        (the arbitration is `./tapGestures`). Because a touch tap no longer
+        reaches transport, the screen reader gets `activate` for play/pause.
       */}
       <Pressable
         accessibilityActions={surfaceAccessibilityActions}
-        accessibilityLabel={paused ? playerWord('play') : playerWord('pause')}
+        accessibilityLabel={
+          controlsVisible ? playerWord('hideControls') : playerWord('showControls')
+        }
         accessibilityRole="button"
-        onAccessibilityAction={handleSeekAction}
+        onAccessibilityAction={handleSurfaceAction}
         onPressIn={handleSurfaceDown}
         onPressOut={handleSurfaceUp}
         style={styles.surfaceTap}
-      />
-
-      {/*
-        Gesture feedback: which way the skip went, and the hold-speed badge.
-        Both live in `PlaybackFeedback` now — it owns the timelines, this only
-        says *what* to show, and a fresh object per skip re-animates a repeat.
-      */}
-      <PlaybackFeedback
-        boost={boosting ? formatRate(holdRate) : null}
-        flash={skipFlash}
-        flashLabel={
-          skipFlash
-            ? `${playerWord(skipFlash.direction === 'back' ? 'seekBackward' : 'seekForward')} ${skipSeconds}s`
-            : ''
-        }
       />
 
       {/*
@@ -1055,6 +1083,23 @@ export function Player({
       </Animated.View>
 
       {/*
+        Gesture feedback: which way the skip went, and the hold-speed badge.
+        Rendered *after* `CenterControls` on purpose — the skip chip is anchored
+        to the left/right edge, but stacking it above the centred play button is
+        what guarantees it is never hidden behind it. It owns its own timelines;
+        a fresh object per skip re-animates a repeat.
+      */}
+      <PlaybackFeedback
+        boost={boosting ? formatRate(holdRate) : null}
+        flash={skipFlash}
+        flashLabel={
+          skipFlash
+            ? `${playerWord(skipFlash.direction === 'back' ? 'seekBackward' : 'seekForward')} ${skipSeconds}s`
+            : ''
+        }
+      />
+
+      {/*
         The bottom dock: one gradient and the controls standing on it, fading
         and rising as a single unit so neither can outlive the other by a
         frame.
@@ -1118,6 +1163,7 @@ export function Player({
         onSubtitleDelayChange={onSubtitleDelayChange}
         onSubtitleSizeChange={onSubtitleSizeChange}
         onSubtitleTrackChange={handleSubtitleTrackChange}
+        onVolumeChange={handleVolumeChange}
         page={settingsPage}
         rate={rate}
         skipSeconds={skipSeconds}
@@ -1125,6 +1171,7 @@ export function Player({
         subtitleDelay={subtitleDelay}
         subtitleSize={subtitleSize}
         visible={settingsOpen}
+        volume={volume}
       />
 
       {/*

@@ -1,18 +1,15 @@
 /**
- * `Dialog` — the port of the shadcn dialog used for every confirmation in
- * pixiWeb (removing an extension, clearing history, deleting a custom
- * subtitle, invalidating the episode cache).
+ * `Dialog` — Material 3 basic dialog.
  *
- * On the web it is a Radix modal: a centred card over a `bg-black/80`
- * backdrop with an `✕` in the corner and a footer action row. RN's `Modal`
- * gives the same behaviour, including `transparent` presentation so the
- * backdrop stays under our own paint.
+ * A 28px-radius surface floating on a scrim, with a title, optional supporting
+ * copy, and a right-aligned action row. RN's `Modal` supplies the behaviour
+ * (including `transparent` presentation so our own scrim stays visible).
  *
  * Semantics kept from the web: title via `accessibilityViewIsModal`, actions
- * right-aligned with an 8px gap, and destructive buttons use the
- * `destructive` variant rather than a tinted border.
+ * right-aligned, and destructive actions use the `destructive` button variant.
  */
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { X } from 'lucide-react-native'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 
@@ -20,9 +17,9 @@ export interface DialogProps {
   open: boolean
   onClose: () => void
   title: string
-  /** Optional supporting copy — `text-sm text-muted-foreground`. */
+  /** Optional supporting copy. */
   description?: string
-  /** Footer buttons; rendered right-aligned, last one last. */
+  /** Footer actions; rendered right-aligned, last one last. */
   children?: React.ReactNode
 }
 
@@ -32,11 +29,18 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Dismiss" />
       <View style={styles.center} pointerEvents="box-none">
         <View style={styles.card} accessibilityViewIsModal>
-          <Pressable style={styles.close} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close">
-            <Text style={styles.closeGlyph}>✕</Text>
+          <Pressable
+            style={styles.close}
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close">
+            <X size={20} color={colors.onSurfaceVariant} strokeWidth={2} />
           </Pressable>
 
-          <Text style={styles.title}>{title}</Text>
+          <Text accessibilityRole="header" style={styles.title}>
+            {title}
+          </Text>
           {description ? <Text style={styles.description}>{description}</Text> : null}
 
           {children ? <View style={styles.footer}>{children}</View> : null}
@@ -53,22 +57,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: colors.scrim,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: colors.popover,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: radii.none,
+    backgroundColor: colors.surfaceContainerHigh,
+    borderRadius: radii.xxl,
     padding: spacing.xl,
     gap: spacing.md,
   },
   close: { position: 'absolute', top: spacing.md, right: spacing.md, padding: spacing.xs, zIndex: 2 },
-  closeGlyph: { color: colors.mutedForeground, fontSize: 14, fontFamily: fonts.regular },
-  title: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 22, color: colors.foreground, paddingRight: 24 },
-  description: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.mutedForeground },
+  title: { fontFamily: fonts.medium, fontSize: 22, lineHeight: 28, color: colors.onSurface, paddingRight: 28 },
+  description: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.onSurfaceVariant },
   footer: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.sm },
 })

@@ -22,9 +22,11 @@ import { useTranslation } from 'react-i18next'
 import { ScreenLayout } from '@/components/layout'
 import { Separator } from '@/components/ui/Primitives'
 import { Button } from '@/components/ui/Button'
+import { StatusBanner } from '@/components/ui/Status'
+import { useConnectionStatus } from '@/hooks/useConnectionStatus'
 import { LANGUAGES, setLanguage } from '@/i18n'
 import type { RootStackParamList } from '@/navigation/types'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import '@/i18n'
 
@@ -67,6 +69,7 @@ const ABOUT: Array<{ termKey: string; valueKey: string }> = [
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
+  const { status } = useConnectionStatus()
   const navigation = useNavigation<Nav>()
   const current = (i18n.resolvedLanguage ?? i18n.language ?? 'en').split('-')[0]
 
@@ -80,6 +83,11 @@ export function SettingsPage() {
           </Text>
           <Text style={styles.subtitle}>{t('settings.pageDesc')}</Text>
         </View>
+
+        {/* Connection status — the app has no bridge, so this is the honest
+            connectivity surface. Shown only when there is something to report
+            (Connecting / Error / Stopped); a healthy app stays quiet. */}
+        {status !== 'running' ? <StatusBanner status={status} /> : null}
 
         {/* Sections — `grid gap-3` on the web, a single column at phone width */}
         <View accessibilityLabel={t('settings.sectionsAria')} style={styles.sections}>
@@ -157,40 +165,43 @@ const styles = StyleSheet.create({
   title: { ...text.pageHeading, color: colors.foreground },
   subtitle: { ...text.meta },
 
-  sections: { gap: spacing.md },
+  sections: { gap: spacing.lg },
   /** `border border-border bg-card p-4 outline-none hover:border-foreground/40` */
   sectionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceContainer,
     padding: spacing.lg,
   },
-  sectionCardPressed: { borderColor: 'rgba(252,252,252,0.40)' },
+  sectionCardPressed: { opacity: 0.9 },
   /** `size-10 border border-border bg-muted` */
   sectionIcon: {
     width: 40,
     height: 40,
     flexShrink: 0,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.muted,
+    backgroundColor: colors.surfaceContainerHighest,
   },
   sectionCopy: { flex: 1, minWidth: 0 },
   sectionLabel: {
     fontFamily: fonts.semibold,
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
-    color: colors.foreground,
+    color: colors.onSurface,
   },
   sectionDesc: { ...text.meta },
 
-  /** `border border-border bg-card` square surface. */
-  panel: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
+  panel: {
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+  },
   /** `border-b px-4 py-3` */
   panelHead: {
     borderBottomWidth: 1,
@@ -212,9 +223,9 @@ const styles = StyleSheet.create({
   /** `divide-y divide-border` rows — phone layout is `flex-col gap-0.5`. */
   aboutRow: {
     flexDirection: 'column',
-    gap: spacing.half,
+    gap: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
   },
   /** `font-mono text-[0.65rem] tracking-wide uppercase` */
   aboutTerm: { ...text.monoSmall },

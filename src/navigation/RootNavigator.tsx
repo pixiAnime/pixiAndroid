@@ -11,6 +11,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 import type { RootStackParamList } from './types'
 
+import { colors } from '@/theme'
+
 import { HomePage } from '@/pages/Home'
 import { BrowsePage } from '@/pages/Browse'
 import { SearchPage } from '@/pages/Search'
@@ -49,7 +51,7 @@ export function RootNavigator() {
       initialRouteName="Home"
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#0a0a0a' },
+        contentStyle: { backgroundColor: colors.surface },
         animation: 'slide_from_right',
       }}>
       {screens.map((screen) => (

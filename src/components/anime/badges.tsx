@@ -5,15 +5,14 @@ import { Star } from 'lucide-react-native'
 import { useTranslation } from 'react-i18next'
 
 import { formatScore } from '@/lib/format'
-import { colors, fonts, spacing, text } from '@/theme'
+import { colors, fonts, radii, spacing, text } from '@/theme'
 
 // Side-effect: bootstraps the i18next singleton (web: `main.tsx`).
 import '@/i18n'
 
 /** `bg-background/85` — the chip sits over artwork, so it stays translucent. */
-const SCORE_BG = 'rgba(10,10,10,0.85)'
-/** `bg-muted/60` */
-const TAG_BG = 'rgba(25,25,25,0.6)'
+const SCORE_BG = colors.surfaceContainerHighest
+const TAG_BG = colors.surfaceContainerHigh
 
 interface ScoreBadgeProps {
   score?: number | null
@@ -54,11 +53,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radii.pill,
     backgroundColor: SCORE_BG,
-    paddingHorizontal: spacing.s1_5,
-    paddingVertical: spacing.half,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   scoreValue: {
     fontFamily: fonts.monoMedium,
@@ -70,11 +68,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radii.pill,
     backgroundColor: TAG_BG,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.half,
+    paddingVertical: spacing.xs,
   },
   /** `font-mono text-[0.65rem] tracking-wide uppercase text-muted-foreground` */
   tagLabel: { ...text.monoSmall },

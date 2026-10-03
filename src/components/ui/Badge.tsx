@@ -1,11 +1,12 @@
 /**
- * `Badge` — the port of `src/components/ui/badge.tsx`.
- * `h-5 rounded-4xl px-2 text-xs font-medium` → 20px tall, 5.2px radius.
+ * `Badge` — Material 3 chip.
+ *
+ * A pill with a 32px height, label-medium type, and tonal/outlined surfaces.
+ * Used for the extension capability and status chips, and for filter tags.
  */
-import { StyleSheet, Text, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
-import { Pressable } from 'react-native'
+import { Pressable, StyleSheet, Text, type StyleProp, type TextStyle, type ViewStyle } from 'react-native'
 
-import { colors, fonts, radii } from '@/theme'
+import { colors, radii, spacing, text } from '@/theme'
 
 export type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost'
 
@@ -38,23 +39,23 @@ export function Badge({ variant = 'default', style, textStyle, onPress, children
 }
 
 const VARIANTS: Record<BadgeVariant, { bg: string; fg: string; border: string }> = {
-  default: { bg: colors.primary, fg: colors.primaryForeground, border: 'transparent' },
-  secondary: { bg: colors.secondary, fg: colors.secondaryForeground, border: 'transparent' },
-  destructive: { bg: colors.destructive, fg: '#ffffff', border: 'transparent' },
-  outline: { bg: 'transparent', fg: colors.foreground, border: colors.input },
-  ghost: { bg: 'transparent', fg: colors.mutedForeground, border: 'transparent' },
+  default: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer, border: 'transparent' },
+  secondary: { bg: colors.secondaryContainer, fg: colors.onSecondaryContainer, border: 'transparent' },
+  destructive: { bg: colors.errorContainer, fg: colors.onErrorContainer, border: 'transparent' },
+  outline: { bg: 'transparent', fg: colors.onSurfaceVariant, border: colors.outline },
+  ghost: { bg: 'transparent', fg: colors.onSurfaceVariant, border: 'transparent' },
 }
 
 const styles = StyleSheet.create({
   label: {
     overflow: 'hidden',
     alignSelf: 'flex-start',
-    height: 20,
-    lineHeight: 18,
-    paddingHorizontal: 8,
-    borderRadius: radii.badge,
+    height: 32,
+    lineHeight: 30,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
     borderWidth: 1,
-    fontFamily: fonts.medium,
+    fontFamily: text.labelMedium.fontFamily,
     fontSize: 12,
     textAlignVertical: 'center',
   },

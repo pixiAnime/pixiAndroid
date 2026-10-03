@@ -1,40 +1,54 @@
 /**
- * `Input` — the port of `src/components/ui/input.tsx`.
+ * `Input` — Material 3 outlined text field.
  *
- * `h-8 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 py-1
- * text-sm placeholder:text-muted-foreground`, i.e. 32px tall, 2px radius,
- * 14px text, and a translucent white fill (`--input` at 30% ≈ 4.5% white).
+ * A 56px field with a 12px radius, a hairline `outline` border that brightens
+ * to `primary` on focus and switches to `error` when invalid, a small label
+ * above in the label style, and optional supporting/error copy below.
  *
- * `font-mono` is applied when `mono` is set — used for URLs and extension
- * ids, where the web renders values in Geist Mono for the same reason the
- * meta labels are mono.
+ * `mono` renders the value in Geist Mono — used for URLs and extension ids.
  */
-import { forwardRef } from 'react'
+import { forwardRef, useState } from 'react'
 import { StyleSheet, Text, TextInput, View, type TextInputInstance, type TextInputProps } from 'react-native'
 
 import { colors, fonts, radii, spacing } from '@/theme'
 
 export interface InputProps extends TextInputProps {
-  /** Label rendered above the field, in the micro mono style. */
+  /** Label rendered above the field. */
   label?: string
   /** Renders a fixed-width monospace value (URLs, ids). */
   mono?: boolean
-  /** Error copy shown below the field, in `--destructive`. */
+  /** Error copy shown below the field, in the error colour. */
   error?: string
 }
 
 export const Input = forwardRef<TextInputInstance, InputProps>(function InputImpl(
-  { label, mono, error, style, ...rest },
+  { label, mono, error, style, onFocus, onBlur, ...rest },
   ref,
 ) {
+  const [focused, setFocused] = useState(false)
+
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
         ref={ref}
-        placeholderTextColor={colors.mutedForeground}
+        placeholderTextColor={colors.onSurfaceVariant}
         {...rest}
-        style={[styles.input, mono && styles.mono, error && styles.inputError, style]}
+        onFocus={(event) => {
+          setFocused(true)
+          onFocus?.(event)
+        }}
+        onBlur={(event) => {
+          setFocused(false)
+          onBlur?.(event)
+        }}
+        style={[
+          styles.input,
+          mono && styles.mono,
+          focused && styles.inputFocused,
+          error ? styles.inputError : null,
+          style,
+        ]}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -44,26 +58,26 @@ export const Input = forwardRef<TextInputInstance, InputProps>(function InputImp
 const styles = StyleSheet.create({
   wrap: { gap: spacing.xs },
   label: {
-    fontFamily: fonts.mono,
-    fontSize: 9.6,
-    lineHeight: 14,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: colors.mutedForeground,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.3,
+    color: colors.onSurfaceVariant,
   },
   input: {
-    height: 32,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 0,
+    minHeight: 56,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.input,
-    backgroundColor: 'rgba(255,255,255,0.045)',
-    color: colors.foreground,
+    borderColor: colors.outline,
+    backgroundColor: colors.surfaceContainerLow,
+    color: colors.onSurface,
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: 15,
   },
+  inputFocused: { borderColor: colors.primary, borderWidth: 2, paddingHorizontal: spacing.lg - 1 },
+  inputError: { borderColor: colors.error },
   mono: { fontFamily: fonts.mono, fontSize: 13 },
-  inputError: { borderColor: colors.destructive },
-  error: { fontFamily: fonts.regular, fontSize: 12, color: colors.destructive },
+  error: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16, color: colors.error },
 })

@@ -1,5 +1,5 @@
 /**
- * React Navigation theme — the palette is exactly pixiWeb's `:root`, so the
+ * React Navigation theme — mapped onto the M3 surface tokens so the
  * navigator's own surfaces (backdrops, card backgrounds) never introduce a
  * colour that isn't already in the system.
  */
@@ -12,11 +12,11 @@ export const navigationTheme: Theme = {
   dark: true,
   colors: {
     ...DarkTheme.colors,
-    primary: colors.foreground,
-    background: colors.background,
-    card: colors.background,
-    text: colors.foreground,
-    border: colors.border,
-    notification: colors.destructive,
+    primary: colors.primary,
+    background: colors.surface,
+    card: colors.surface,
+    text: colors.onSurface,
+    border: colors.outlineVariant,
+    notification: colors.error,
   },
 }
