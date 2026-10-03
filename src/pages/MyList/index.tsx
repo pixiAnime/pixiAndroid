@@ -14,7 +14,7 @@ import { Heart, Play, Trash2 } from '@/components/icons'
 import { useTranslation } from 'react-i18next'
 
 import { SafeImage } from '@/components/anime'
-import { ScreenLayout } from '@/components/layout'
+import { VirtualListLayout } from '@/components/layout'
 import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/Button'
 import { formatRelativeTime } from '@/lib/format'
@@ -34,9 +34,16 @@ export function MyListPage() {
   const toggle = useFavoritesStore((s) => s.toggle)
 
   return (
-    <ScreenLayout contentStyle={styles.page}>
-      {/* `space-y-6` stack from the web page */}
-      <View style={styles.stack}>
+    <VirtualListLayout
+      data={favorites}
+      empty={
+        <EmptyState
+          title={t('myList.emptyTitle')}
+          description={t('myList.emptyDesc')}
+          icon={<Heart size={20} color={colors.mutedForeground} strokeWidth={1.6} />}
+        />
+      }
+      header={
         <View style={styles.headerTitles}>
           <Text accessibilityRole="header" style={styles.title}>
             {t('nav.myList')}
@@ -47,78 +54,63 @@ export function MyListPage() {
               : t('myList.subtitleEmpty')}
           </Text>
         </View>
+      }
+      keyExtractor={(fav) => String(fav.animeId)}
+      renderItem={(fav) => (
+        <View style={styles.row}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t('common.openAria', {
+              title: fav.titleEnglish ?? fav.title,
+            })}
+            onPress={() => navigation.navigate('AnimeDetail', { malId: fav.animeId })}
+            style={styles.posterButton}>
+            <SafeImage src={fav.posterUrl} alt="" aspectRatio={2 / 3} style={styles.poster} />
+          </Pressable>
 
-        {favorites.length === 0 ? (
-          <EmptyState
-            title={t('myList.emptyTitle')}
-            description={t('myList.emptyDesc')}
-            icon={<Heart size={20} color={colors.mutedForeground} strokeWidth={1.6} />}
-          />
-        ) : (
-          <View style={styles.list}>
-            {favorites.map((fav) => (
-              <View key={fav.animeId} style={styles.row}>
-                <Pressable
-                  accessibilityRole="link"
-                  accessibilityLabel={t('common.openAria', {
-                    title: fav.titleEnglish ?? fav.title,
-                  })}
-                  onPress={() => navigation.navigate('AnimeDetail', { malId: fav.animeId })}
-                  style={styles.posterButton}>
-                  <SafeImage src={fav.posterUrl} alt="" aspectRatio={2 / 3} style={styles.poster} />
-                </Pressable>
+          <View style={styles.body}>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => navigation.navigate('AnimeDetail', { malId: fav.animeId })}>
+              <Text numberOfLines={1} style={styles.rowTitle}>
+                {fav.titleEnglish ?? fav.title}
+              </Text>
+            </Pressable>
 
-                <View style={styles.body}>
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={() => navigation.navigate('AnimeDetail', { malId: fav.animeId })}>
-                    <Text numberOfLines={1} style={styles.rowTitle}>
-                      {fav.titleEnglish ?? fav.title}
-                    </Text>
-                  </Pressable>
-
-                  <Text style={styles.meta}>
-                    {fav.score ? `★ ${fav.score.toFixed(2)} · ` : ''}
-                    {t('myList.added', { when: formatRelativeTime(fav.addedAt) })}
-                  </Text>
-                </View>
-
-                <View style={styles.actions}>
-                  <Button
-                    size="sm"
-                    onPress={() =>
-                      navigation.navigate('Watch', { malId: fav.animeId, episode: 1 })
-                    }>
-                    <Play size={13} color={colors.primaryForeground} strokeWidth={1.6} />
-                    <Text style={styles.ctaLabel}>{t('common.watch')}</Text>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="iconSm"
-                    accessibilityLabel={t('myList.removeAria', { title: fav.title })}
-                    onPress={() => toggle(fav)}>
-                    <Trash2 size={15} color={colors.foreground} strokeWidth={1.6} />
-                  </Button>
-                </View>
-              </View>
-            ))}
+            <Text style={styles.meta}>
+              {fav.score ? `★ ${fav.score.toFixed(2)} · ` : ''}
+              {t('myList.added', { when: formatRelativeTime(fav.addedAt) })}
+            </Text>
           </View>
-        )}
-      </View>
-    </ScreenLayout>
+
+          <View style={styles.actions}>
+            <Button
+              size="sm"
+              onPress={() =>
+                navigation.navigate('Watch', { malId: fav.animeId, episode: 1 })
+              }>
+              <Play size={13} color={colors.primaryForeground} strokeWidth={1.6} />
+              <Text style={styles.ctaLabel}>{t('common.watch')}</Text>
+            </Button>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              accessibilityLabel={t('myList.removeAria', { title: fav.title })}
+              onPress={() => toggle(fav)}>
+              <Trash2 size={15} color={colors.foreground} strokeWidth={1.6} />
+            </Button>
+          </View>
+        </View>
+      )}
+    />
   )
 }
 
 const styles = StyleSheet.create({
-  page: { gap: 40 },
-  /** Web page root is `space-y-6`. */
-  stack: { gap: spacing.xl },
-
   headerTitles: { gap: spacing.xs },
   title: { ...text.pageHeading, color: colors.foreground },
   subtitle: { ...text.meta },
 
-  list: { gap: spacing.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

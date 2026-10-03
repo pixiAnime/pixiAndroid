@@ -3,6 +3,7 @@ export { Header } from './Header'
 export { BottomNav } from './BottomNav'
 export { Footer } from './Footer'
 export { ScreenLayout, type ScreenLayoutProps } from './ScreenLayout'
+export { VirtualListLayout, type VirtualListLayoutProps } from './VirtualListLayout'
 export {
   FullscreenChromeProvider,
   useFullscreenChrome,

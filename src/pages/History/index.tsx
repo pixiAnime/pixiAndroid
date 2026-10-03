@@ -19,7 +19,7 @@ import { ChevronRight, History as HistoryIcon, Play, Trash2 } from '@/components
 import { useTranslation } from 'react-i18next'
 
 import { SafeImage } from '@/components/anime'
-import { ScreenLayout } from '@/components/layout'
+import { VirtualListLayout } from '@/components/layout'
 import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -44,136 +44,132 @@ export function HistoryPage() {
   const sorted = useMemo(() => selectContinueWatching(entries), [entries])
 
   return (
-    <ScreenLayout contentStyle={styles.page}>
-      {/* `space-y-6` stack from the web page */}
-      <View style={styles.stack}>
-        <PageHeader count={sorted.length} onClear={() => setConfirmClear(true)} />
+    <VirtualListLayout
+      data={sorted}
+      empty={
+        <EmptyState
+          title={t('history.emptyTitle')}
+          description={t('history.emptyDesc')}
+          icon={<HistoryIcon size={20} color={colors.mutedForeground} strokeWidth={1.6} />}
+        />
+      }
+      header={<PageHeader count={sorted.length} onClear={() => setConfirmClear(true)} />}
+      keyExtractor={(entry) => `${entry.animeId}-${entry.episode}`}
+      overlay={
+        <Dialog
+          open={confirmClear}
+          onClose={() => setConfirmClear(false)}
+          title={t('history.clearTitle')}
+          description={t('history.clearDesc', { count: entries.length })}>
+          <Button variant="outline" onPress={() => setConfirmClear(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            onPress={() => {
+              clear()
+              setConfirmClear(false)
+            }}>
+            {t('history.clearAction')}
+          </Button>
+        </Dialog>
+      }
+      renderItem={(entry) => (
+        <View style={styles.row}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t('common.openAria', {
+              title: entry.titleEnglish ?? entry.title,
+            })}
+            onPress={() => navigation.navigate('AnimeDetail', { malId: entry.animeId })}
+            style={({ pressed }) => [styles.posterButton, pressed && styles.posterPressed]}>
+            <SafeImage
+              src={entry.posterUrl}
+              alt=""
+              aspectRatio={2 / 3}
+              style={styles.poster}
+            />
+          </Pressable>
 
-        {sorted.length === 0 ? (
-          <EmptyState
-            title={t('history.emptyTitle')}
-            description={t('history.emptyDesc')}
-            icon={<HistoryIcon size={20} color={colors.mutedForeground} strokeWidth={1.6} />}
-          />
-        ) : (
-          <View style={styles.list}>
-            {sorted.map((entry) => (
-              <View key={entry.animeId} style={styles.row}>
-                <Pressable
-                  accessibilityRole="link"
-                  accessibilityLabel={t('common.openAria', {
-                    title: entry.titleEnglish ?? entry.title,
-                  })}
-                  onPress={() => navigation.navigate('AnimeDetail', { malId: entry.animeId })}
-                  style={({ pressed }) => [styles.posterButton, pressed && styles.posterPressed]}>
-                  <SafeImage
-                    src={entry.posterUrl}
-                    alt=""
-                    aspectRatio={2 / 3}
-                    style={styles.poster}
-                  />
-                </Pressable>
+          <View style={styles.body}>
+            {/* Title takes the row; the remove action trails at the top. */}
+            <View style={styles.titleRow}>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() =>
+                  navigation.navigate('AnimeDetail', { malId: entry.animeId })
+                }
+                style={styles.titleLink}>
+                <Text numberOfLines={1} style={styles.rowTitle}>
+                  {entry.titleEnglish ?? entry.title}
+                </Text>
+              </Pressable>
+              <Button
+                variant="ghost"
+                size="iconSm"
+                accessibilityLabel={t('history.removeAria', { title: entry.title })}
+                onPress={() => removeEntry(entry.animeId)}>
+                <Trash2 size={15} color={colors.foreground} strokeWidth={1.6} />
+              </Button>
+            </View>
 
-                <View style={styles.body}>
-                  {/* Title takes the row; the remove action trails at the top. */}
-                  <View style={styles.titleRow}>
-                    <Pressable
-                      accessibilityRole="link"
-                      onPress={() =>
-                        navigation.navigate('AnimeDetail', { malId: entry.animeId })
-                      }
-                      style={styles.titleLink}>
-                      <Text numberOfLines={1} style={styles.rowTitle}>
-                        {entry.titleEnglish ?? entry.title}
-                      </Text>
-                    </Pressable>
-                    <Button
-                      variant="ghost"
-                      size="iconSm"
-                      accessibilityLabel={t('history.removeAria', { title: entry.title })}
-                      onPress={() => removeEntry(entry.animeId)}>
-                      <Trash2 size={15} color={colors.foreground} strokeWidth={1.6} />
-                    </Button>
-                  </View>
+            <Text style={styles.episode}>
+              {t('common.episode', { num: padEpisode(entry.episode) })}
+              {entry.episodeTitle ? ` · ${entry.episodeTitle}` : ''}
+            </Text>
 
-                  <Text style={styles.episode}>
-                    {t('common.episode', { num: padEpisode(entry.episode) })}
-                    {entry.episodeTitle ? ` · ${entry.episodeTitle}` : ''}
-                  </Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.meta}>{formatRelativeTime(entry.lastWatchedAt)}</Text>
+              {typeof entry.progress === 'number' && entry.progress > 0 ? (
+                <Text style={styles.meta}>
+                  {t('history.progress', { percent: Math.round(entry.progress) })}
+                </Text>
+              ) : null}
+              {entry.totalEpisodes ? (
+                <Text style={styles.meta}>
+                  {entry.episode}/{entry.totalEpisodes}
+                </Text>
+              ) : null}
+            </View>
 
-                  <View style={styles.metaRow}>
-                    <Text style={styles.meta}>{formatRelativeTime(entry.lastWatchedAt)}</Text>
-                    {typeof entry.progress === 'number' && entry.progress > 0 ? (
-                      <Text style={styles.meta}>
-                        {t('history.progress', { percent: Math.round(entry.progress) })}
-                      </Text>
-                    ) : null}
-                    {entry.totalEpisodes ? (
-                      <Text style={styles.meta}>
-                        {entry.episode}/{entry.totalEpisodes}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  {typeof entry.progress === 'number' && entry.progress > 0 ? (
-                    <View
-                      accessibilityRole="progressbar"
-                      accessibilityLabel={t('a11y.watchProgressFor', { title: entry.title })}
-                      accessibilityValue={{
-                        min: 0,
-                        max: 100,
-                        now: Math.round(entry.progress),
-                      }}
-                      style={styles.progressTrack}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${Math.min(entry.progress, 100)}%` as `${number}%` },
-                        ]}
-                      />
-                    </View>
-                  ) : null}
-
-                  {/* Primary action spans the card's bottom edge, trailing. */}
-                  <View style={styles.ctaRow}>
-                    <Button
-                      size="sm"
-                      onPress={() =>
-                        navigation.navigate('Watch', {
-                          malId: entry.animeId,
-                          episode: entry.episode,
-                        })
-                      }>
-                      <Play size={13} color={colors.primaryForeground} strokeWidth={1.6} />
-                      <Text style={styles.ctaLabel}>{t('common.continue')}</Text>
-                      <ChevronRight size={13} color={colors.primaryForeground} strokeWidth={1.6} />
-                    </Button>
-                  </View>
-                </View>
+            {typeof entry.progress === 'number' && entry.progress > 0 ? (
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel={t('a11y.watchProgressFor', { title: entry.title })}
+                accessibilityValue={{
+                  min: 0,
+                  max: 100,
+                  now: Math.round(entry.progress),
+                }}
+                style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.min(entry.progress, 100)}%` as `${number}%` },
+                  ]}
+                />
               </View>
-            ))}
-          </View>
-        )}
-      </View>
+            ) : null}
 
-      <Dialog
-        open={confirmClear}
-        onClose={() => setConfirmClear(false)}
-        title={t('history.clearTitle')}
-        description={t('history.clearDesc', { count: entries.length })}>
-        <Button variant="outline" onPress={() => setConfirmClear(false)}>
-          {t('common.cancel')}
-        </Button>
-        <Button
-          variant="destructive"
-          onPress={() => {
-            clear()
-            setConfirmClear(false)
-          }}>
-          {t('history.clearAction')}
-        </Button>
-      </Dialog>
-    </ScreenLayout>
+            {/* Primary action spans the card's bottom edge, trailing. */}
+            <View style={styles.ctaRow}>
+              <Button
+                size="sm"
+                onPress={() =>
+                  navigation.navigate('Watch', {
+                    malId: entry.animeId,
+                    episode: entry.episode,
+                  })
+                }>
+                <Play size={13} color={colors.primaryForeground} strokeWidth={1.6} />
+                <Text style={styles.ctaLabel}>{t('common.continue')}</Text>
+                <ChevronRight size={13} color={colors.primaryForeground} strokeWidth={1.6} />
+              </Button>
+            </View>
+          </View>
+        </View>
+      )}
+    />
   )
 }
 
@@ -200,10 +196,6 @@ function PageHeader({ count, onClear }: { count: number; onClear: () => void }) 
 }
 
 const styles = StyleSheet.create({
-  page: { gap: 40 },
-  /** Web page root is `space-y-6`. */
-  stack: { gap: spacing.xl },
-
   header: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -214,7 +206,6 @@ const styles = StyleSheet.create({
   title: { ...text.pageHeading, color: colors.foreground },
   subtitle: { ...text.meta },
 
-  list: { gap: spacing.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
