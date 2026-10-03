@@ -32,7 +32,7 @@ jobs:
           java-version: 21
 
       - name: Install the pinned NDK and CMake
-        run: sdkmanager "ndk;27.1.12297006" "cmake;3.22.1"
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.1.12297006" "cmake;3.22.1"
 
       - name: Install dependencies
         run: npm ci
