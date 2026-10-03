@@ -1,0 +1,79 @@
+/**
+ * Footer — `mt-16 border-t` block with the wordmark, the attribution line
+ * and the secondary nav links.
+ *
+ * Two lines from the web footer are intentionally absent on Android: the
+ * jikan link is kept (it opens in the browser via `Linking`), but the
+ * `footer.bridgeLabel {config.pixiClient.baseUrl}` line is dropped because
+ * there is no bridge to address.
+ */
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
+
+import { SECONDARY_NAV } from '@/navigation/navItems'
+import { useShellNav } from '@/navigation/shell'
+import { colors, fonts, spacing } from '@/theme'
+
+export function Footer() {
+  const { navigate } = useShellNav()
+  const { t } = useTranslation()
+
+  return (
+    <View style={styles.footer}>
+      <View style={styles.inner}>
+        <View style={styles.brandBlock}>
+          <Text style={styles.wordmark}>pixiAndroid</Text>
+          <Text style={styles.meta}>
+            {t('footer.metaBy')}{' '}
+            <Text
+              style={styles.link}
+              onPress={() => Linking.openURL('https://jikan.moe').catch(() => undefined)}>
+              {t('footer.jikan')}
+            </Text>
+            {t('footer.bridgeBy')}
+          </Text>
+        </View>
+
+        <View style={styles.links}>
+          {SECONDARY_NAV.map((item) => (
+            <Pressable
+              key={item.to}
+              accessibilityRole="link"
+              onPress={() => navigate(item.screen)}
+              hitSlop={6}>
+              <Text style={styles.linkLabel}>{t(item.labelKey)}</Text>
+            </Pressable>
+          ))}
+          <Pressable accessibilityRole="link" onPress={() => navigate('Settings')} hitSlop={6}>
+            <Text style={styles.linkLabel}>{t('nav.settings')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  footer: { marginTop: 64, borderTopWidth: 1, borderTopColor: colors.border },
+  inner: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xl, gap: spacing.lg },
+  brandBlock: { gap: spacing.xs },
+  wordmark: {
+    fontFamily: fonts.mono,
+    fontSize: 11.2,
+    lineHeight: 16,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.foreground,
+  },
+  meta: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.mutedForeground },
+  link: { textDecorationLine: 'underline', color: colors.mutedForeground },
+  links: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.lg, rowGap: spacing.xs },
+  linkLabel: {
+    fontFamily: fonts.mono,
+    fontSize: 11.2,
+    lineHeight: 16,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: colors.mutedForeground,
+  },
+})

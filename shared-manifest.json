@@ -1,0 +1,77 @@
+{
+  "$comment": [
+    "Platform-independent modules shared with ../pixiWeb.",
+    "Every entry is copied verbatim (or through a named transform) by",
+    "scripts/sync-shared.mjs. Anything NOT listed here is owned by this",
+    "mobile repo and may be edited freely.",
+    "Paths are relative to the project root and mirror the web tree so",
+    "`@/*` resolves identically in both projects."
+  ],
+  "source": "../pixiWeb",
+  "transforms": {
+    "vite-dev": {
+      "$comment": "Vite injects import.meta.env at build time; Metro/Hermes has no import.meta.",
+      "substitutions": [
+        { "from": "import.meta.env.DEV", "to": "(__DEV__)" },
+        { "from": "import.meta.env.PROD", "to": "(!__DEV__)" },
+        { "from": "import.meta.env.MODE", "to": "(__DEV__ ? 'development' : 'production')" }
+      ]
+    }
+  },
+  "verbatim": [
+    "src/api/anilist/endpoints.ts",
+    "src/api/anilist/genres.ts",
+    "src/api/anilist/mapper.ts",
+    "src/api/anilist/queries.ts",
+    "src/api/anilist/types.ts",
+    "src/api/errors.ts",
+    "src/api/jikan/endpoints.ts",
+    "src/api/jikan/index.ts",
+    "src/api/jikan/queries.ts",
+    "src/api/jikan/types.ts",
+    "src/extensions/index.ts",
+    "src/extensions/providers/normalize.ts",
+    "src/extensions/providers/request.ts",
+    "src/extensions/runtime/ExtensionRegistry.ts",
+    "src/extensions/runtime/ExtensionRuntime.ts",
+    "src/extensions/runtime/channel.ts",
+    "src/extensions/runtime/config.ts",
+    "src/extensions/runtime/errors.ts",
+    "src/extensions/runtime/policy.ts",
+    "src/extensions/runtime/validator.ts",
+    "src/extensions/runtime/version.ts",
+    "src/extensions/sdk/defineExtension.ts",
+    "src/extensions/sdk/index.ts",
+    "src/extensions/sdk/types.ts",
+    "src/extensions/subtitles/convert.ts",
+    "src/hooks/useAnimeData.ts",
+    "src/hooks/useDebounce.ts",
+    "src/hooks/useEpisodes.ts",
+    "src/i18n/ext-messages.ts",
+    "src/i18n/resources/en.ts",
+    "src/i18n/resources/ru.ts",
+    "src/i18n/resources/tr.ts",
+    "src/lib/format.ts",
+    "src/lib/season.ts",
+    "src/lib/utils.ts",
+    "src/providers/episode/index.ts",
+    "src/providers/episode/jikanEpisodeProvider.ts",
+    "src/providers/episode/types.ts",
+    "src/stores/favoritesStore.ts",
+    "src/stores/historyStore.ts",
+    "src/stores/recentlyViewedStore.ts",
+    "src/stores/types.ts",
+    "tests/convert.test.ts",
+    "tests/i18n.test.ts",
+    "tests/normalize.test.ts",
+    "tests/policy.test.ts",
+    "tests/sandbox-channel.test.ts",
+    "tests/validator.test.ts",
+    "tests/version.test.ts"
+  ],
+  "transformed": [
+    { "path": "src/api/fallback.ts", "with": "vite-dev" },
+    { "path": "src/extensions/providers/streaming.ts", "with": "vite-dev" },
+    { "path": "src/extensions/providers/subtitles.ts", "with": "vite-dev" }
+  ]
+}

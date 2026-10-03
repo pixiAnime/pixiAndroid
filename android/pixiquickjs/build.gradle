@@ -1,0 +1,46 @@
+apply plugin: "com.android.library"
+apply plugin: "org.jetbrains.kotlin.android"
+
+/**
+ * Native extension sandbox for Pixi Mobile.
+ *
+ * Compiles the platform-neutral QuickJS runtime (repo-root `native/`) into
+ * libpixiquickjs.so. React Native's C++ APIs are intentionally NOT used:
+ * the module is a plain Kotlin NativeModule talking to C++ over JNI, so it
+ * works on both architectures without codegen or prefab.
+ */
+android {
+    namespace "com.pixi.mobile.sandbox"
+    compileSdk rootProject.ext.compileSdkVersion
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++20", "-fno-rtti"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs = ["src/main/java"]
+        }
+    }
+}
+
+dependencies {
+    implementation("com.facebook.react:react-android")
+}

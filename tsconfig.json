@@ -1,0 +1,19 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["node"],
+    "allowJs": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  // `tests/` is deliberately not typechecked: it runs under `node --test`,
+  // whose lib and type set differ from React Native's (two incompatible
+  // global `URL` definitions, for one). The web build makes the same choice —
+  // its tsconfig.app.json also includes only `src`.
+  "include": ["src"],
+  "exclude": ["**/node_modules", "**/Pods", "android", "ios"]
+}
