@@ -1,4 +1,6 @@
-# pixiAndroid
+# pixiAndroid — architecture notes
+
+Companion to the user-facing [`README`](../README.md).
 
 The native counterpart to [pixiWeb](../pixiWeb) — a React Native (bare,
 TypeScript) Android client that reproduces the web app's design, UX,
