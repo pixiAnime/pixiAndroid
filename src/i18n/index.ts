@@ -1,5 +1,5 @@
 /**
- * i18n bootstrap — English, Türkçe, Русский.
+ * i18n bootstrap — English, Türkçe, Русский, Español.
  *
  * Detection: saved choice → device language (from `Intl`, since React Native
  * exposes no `navigator.languages`) → English. The choice made in Settings
@@ -11,6 +11,7 @@ import { getLocalStorage } from '@/platform/storage/localStorage'
 import { en } from './resources/en'
 import { tr } from './resources/tr'
 import { ru } from './resources/ru'
+import { es } from './resources/es'
 import { localizeExtensionMessage } from './ext-messages'
 import { mobileOverlay } from './mobile'
 
@@ -35,6 +36,7 @@ export const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'tr', label: 'Türkçe' },
   { code: 'ru', label: 'Русский' },
+  { code: 'es', label: 'Español' },
 ] as const
 
 export type LanguageCode = (typeof LANGUAGES)[number]['code']
@@ -91,6 +93,7 @@ if (!i18next.isInitialized) {
         en: { translation: withMobileOverlay(en, mobileOverlay.en) },
         tr: { translation: withMobileOverlay(tr, mobileOverlay.tr) },
         ru: { translation: withMobileOverlay(ru, mobileOverlay.ru) },
+        es: { translation: withMobileOverlay(es, mobileOverlay.es) },
       },
       lng: detectLanguage(),
       fallbackLng: 'en',

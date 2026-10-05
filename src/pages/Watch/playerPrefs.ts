@@ -28,8 +28,10 @@ export const SUBTITLE_SIZE_CYCLE: SubtitleSize[] = ['small', 'medium', 'large']
 /**
  * The subtitle languages the auto-pick can be pinned to. `auto` follows the
  * app's own language; the rest force a specific track language on open.
+ * Keep in step with the app languages in `@/i18n` — a language the app speaks
+ * should be pinnable, or "App language" can select a track the user cannot read.
  */
-export const SUBTITLE_LANGUAGE_CHOICES = ['auto', 'en', 'tr', 'ru'] as const
+export const SUBTITLE_LANGUAGE_CHOICES = ['auto', 'en', 'tr', 'ru', 'es'] as const
 export type SubtitleLanguagePref = (typeof SUBTITLE_LANGUAGE_CHOICES)[number]
 
 

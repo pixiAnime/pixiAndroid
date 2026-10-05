@@ -34,12 +34,14 @@ function placeholders(message: string): string[] {
 const en = flatten(mobileOverlay.en)
 const tr = flatten(mobileOverlay.tr)
 const ru = flatten(mobileOverlay.ru)
+const es = flatten(mobileOverlay.es)
 
-test('tr and ru cover exactly the en overlay key set', () => {
+test('every non-English overlay covers exactly the en key set', () => {
   const enKeys = Object.keys(en)
   for (const [lang, dict] of [
     ['tr', tr],
     ['ru', ru],
+    ['es', es],
   ] as const) {
     const missing = enKeys.filter((key) => !(key in dict))
     const extra = Object.keys(dict).filter((key) => !(key in en))
@@ -56,10 +58,11 @@ test('every mobileKeys constant resolves to an overlay key', () => {
   }
 })
 
-test('interpolation placeholders match across en/tr/ru', () => {
+test('interpolation placeholders match across every language', () => {
   for (const [lang, dict] of [
     ['tr', tr],
     ['ru', ru],
+    ['es', es],
   ] as const) {
     for (const [key, message] of Object.entries(en)) {
       assert.deepEqual(

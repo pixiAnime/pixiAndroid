@@ -17,15 +17,22 @@ export function Panel({
   ariaLabel,
   children,
 }: {
-  label: string
+  /**
+   * Omit for a panel that is the only one under a category header — the
+   * surrounding heading already says what it is, and a second one stacked on
+   * top of it is just noise.
+   */
+  label?: string
   ariaLabel?: string
   children: ReactNode
 }) {
   return (
     <View accessibilityLabel={ariaLabel} style={styles.panel}>
-      <View style={styles.panelHead}>
-        <Text style={styles.panelHeadLabel}>{label}</Text>
-      </View>
+      {label ? (
+        <View style={styles.panelHead}>
+          <Text style={styles.panelHeadLabel}>{label}</Text>
+        </View>
+      ) : null}
       <View>{children}</View>
     </View>
   )
@@ -37,39 +44,23 @@ export function SettingRow({
   description,
   children,
   first,
-  onPress,
 }: {
   title: string
   description?: string
   children?: ReactNode
   /** Omit the divider — the first row in a panel. */
   first?: boolean
-  /** When set, the whole row is tappable (used by the "manage" link). */
-  onPress?: () => void
 }) {
-  const body = (
-    <View style={styles.row}>
-      <View style={styles.rowCopy}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        {description ? <Text style={styles.rowDesc}>{description}</Text> : null}
-      </View>
-      {children ? <View style={styles.rowControl}>{children}</View> : null}
-    </View>
-  )
   return (
     <View>
       {first ? null : <Separator />}
-      {onPress ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={title}
-          onPress={onPress}
-          style={({ pressed }) => (pressed ? styles.pressed : undefined)}>
-          {body}
-        </Pressable>
-      ) : (
-        body
-      )}
+      <View style={styles.row}>
+        <View style={styles.rowCopy}>
+          <Text style={styles.rowTitle}>{title}</Text>
+          {description ? <Text style={styles.rowDesc}>{description}</Text> : null}
+        </View>
+        {children ? <View style={styles.rowControl}>{children}</View> : null}
+      </View>
     </View>
   )
 }
@@ -109,7 +100,11 @@ export function SettingChoice<T extends string | number>({
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 onPress={() => onChange(option)}
-                style={[styles.choice, active && styles.choiceActive]}>
+                style={({ pressed }) => [
+                  styles.choice,
+                  active && styles.choiceActive,
+                  pressed && !active && styles.pressed,
+                ]}>
                 <Text style={[styles.choiceLabel, active && styles.choiceLabelActive]}>
                   {format ? format(option) : String(option)}
                 </Text>

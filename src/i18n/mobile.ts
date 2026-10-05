@@ -49,7 +49,12 @@ export const mobileKeys = {
   providerInstallAria: 'extensions.providerInstallAria',
 
   /* Settings — expanded hub. */
-  playbackHeading: 'settings.playbackHeading',
+  tabsAria: 'settings.tabsAria',
+  tabGeneral: 'settings.tabGeneral',
+  tabAppearance: 'settings.tabAppearance',
+  tabPlayback: 'settings.tabPlayback',
+  tabExtensions: 'settings.tabExtensions',
+  tabData: 'settings.tabData',
   playbackAria: 'settings.playbackAria',
   autoplayNext: 'settings.autoplayNext',
   autoplayNextDesc: 'settings.autoplayNextDesc',
@@ -59,6 +64,9 @@ export const mobileKeys = {
   holdSpeedDesc: 'settings.holdSpeedDesc',
   subtitleSize: 'settings.subtitleSize',
   subtitleSizeDesc: 'settings.subtitleSizeDesc',
+  subtitleSmall: 'settings.subtitleSmall',
+  subtitleMedium: 'settings.subtitleMedium',
+  subtitleLarge: 'settings.subtitleLarge',
   subtitleLanguage: 'settings.subtitleLanguage',
   subtitleLanguageDesc: 'settings.subtitleLanguageDesc',
   subtitleAuto: 'settings.subtitleAuto',
@@ -67,7 +75,6 @@ export const mobileKeys = {
   fillToggle: 'settings.fillToggle',
   fillToggleDesc: 'settings.fillToggleDesc',
 
-  contentHeading: 'settings.contentHeading',
   contentAria: 'settings.contentAria',
   titleLanguage: 'settings.titleLanguage',
   titleLanguageDesc: 'settings.titleLanguageDesc',
@@ -108,7 +115,6 @@ export const mobileKeys = {
   recentCleared: 'settings.recentCleared',
   settingsReset: 'settings.settingsReset',
 
-  extensionsHeading: 'settings.extensionsHeading',
   extensionsAria: 'settings.extensionsAria',
   autoCheckUpdates: 'settings.autoCheckUpdates',
   autoCheckUpdatesDesc: 'settings.autoCheckUpdatesDesc',
@@ -154,7 +160,12 @@ type ExtensionsOverlay = {
 }
 
 type SettingsOverlay = {
-  playbackHeading: string
+  tabsAria: string
+  tabGeneral: string
+  tabAppearance: string
+  tabPlayback: string
+  tabExtensions: string
+  tabData: string
   playbackAria: string
   autoplayNext: string
   autoplayNextDesc: string
@@ -164,6 +175,9 @@ type SettingsOverlay = {
   holdSpeedDesc: string
   subtitleSize: string
   subtitleSizeDesc: string
+  subtitleSmall: string
+  subtitleMedium: string
+  subtitleLarge: string
   subtitleLanguage: string
   subtitleLanguageDesc: string
   subtitleAuto: string
@@ -172,7 +186,6 @@ type SettingsOverlay = {
   fillToggle: string
   fillToggleDesc: string
 
-  contentHeading: string
   contentAria: string
   titleLanguage: string
   titleLanguageDesc: string
@@ -213,7 +226,6 @@ type SettingsOverlay = {
   recentCleared: string
   settingsReset: string
 
-  extensionsHeading: string
   extensionsAria: string
   autoCheckUpdates: string
   autoCheckUpdatesDesc: string
@@ -268,7 +280,12 @@ const en: Overlay = {
     providerInstallAria: 'Install provider {{name}}',
   },
   settings: {
-    playbackHeading: 'Playback',
+    tabsAria: 'Settings categories',
+    tabGeneral: 'General',
+    tabAppearance: 'Appearance',
+    tabPlayback: 'Playback',
+    tabExtensions: 'Extensions',
+    tabData: 'Data',
     playbackAria: 'Playback settings',
     autoplayNext: 'Autoplay next episode',
     autoplayNextDesc: 'Start the next episode automatically when one ends.',
@@ -278,6 +295,9 @@ const en: Overlay = {
     holdSpeedDesc: 'Playback speed while you press and hold the picture.',
     subtitleSize: 'Subtitle size',
     subtitleSizeDesc: 'Default caption size in the player.',
+    subtitleSmall: 'Small',
+    subtitleMedium: 'Medium',
+    subtitleLarge: 'Large',
     subtitleLanguage: 'Subtitle language',
     subtitleLanguageDesc: 'Which captions auto-select when an episode opens.',
     subtitleAuto: 'App language',
@@ -286,7 +306,6 @@ const en: Overlay = {
     fillToggle: 'Fill the screen',
     fillToggleDesc: 'Open the player zoomed to fill the screen instead of fitting the frame.',
 
-    contentHeading: 'Content',
     contentAria: 'Content settings',
     titleLanguage: 'Title language',
     titleLanguageDesc: 'Which title is shown for an anime.',
@@ -327,7 +346,6 @@ const en: Overlay = {
     recentCleared: 'Recently viewed cleared.',
     settingsReset: 'Settings reset.',
 
-    extensionsHeading: 'Extensions',
     extensionsAria: 'Extension settings',
     autoCheckUpdates: 'Check for extension updates on open',
     autoCheckUpdatesDesc: 'Refresh repository manifests when the Extensions page opens.',
@@ -377,7 +395,12 @@ const tr: Overlay = {
     providerInstallAria: '{{name}} sağlayıcısını kur',
   },
   settings: {
-    playbackHeading: 'Oynatma',
+    tabsAria: 'Ayar kategorileri',
+    tabGeneral: 'Genel',
+    tabAppearance: 'Görünüm',
+    tabPlayback: 'Oynatma',
+    tabExtensions: 'Eklentiler',
+    tabData: 'Veri',
     playbackAria: 'Oynatma ayarları',
     autoplayNext: 'Sonraki bölümü otomatik oynat',
     autoplayNextDesc: 'Bir bölüm bitince sonraki bölüm kendiliğinden başlar.',
@@ -387,6 +410,9 @@ const tr: Overlay = {
     holdSpeedDesc: 'Görüntüye basılı tutarken oynatma hızı.',
     subtitleSize: 'Altyazı boyutu',
     subtitleSizeDesc: 'Oynatıcıdaki varsayılan altyazı boyutu.',
+    subtitleSmall: 'Küçük',
+    subtitleMedium: 'Orta',
+    subtitleLarge: 'Büyük',
     subtitleLanguage: 'Altyazı dili',
     subtitleLanguageDesc: 'Bir bölüm açılınca hangi altyazının seçileceği.',
     subtitleAuto: 'Uygulama dili',
@@ -395,7 +421,6 @@ const tr: Overlay = {
     fillToggle: 'Ekranı doldur',
     fillToggleDesc: 'Çerçeveye sığdırmak yerine ekranı dolduracak şekilde aç.',
 
-    contentHeading: 'İçerik',
     contentAria: 'İçerik ayarları',
     titleLanguage: 'Başlık dili',
     titleLanguageDesc: 'Bir anime için gösterilen başlık.',
@@ -436,7 +461,6 @@ const tr: Overlay = {
     recentCleared: 'Son görüntülenenler temizlendi.',
     settingsReset: 'Ayarlar sıfırlandı.',
 
-    extensionsHeading: 'Eklentiler',
     extensionsAria: 'Eklenti ayarları',
     autoCheckUpdates: 'Açılışta güncellemeleri denetle',
     autoCheckUpdatesDesc: 'Eklentiler sayfası açıldığında depo manifestleri yenilenir.',
@@ -486,7 +510,12 @@ const ru: Overlay = {
     providerInstallAria: 'Установить провайдер {{name}}',
   },
   settings: {
-    playbackHeading: 'Воспроизведение',
+    tabsAria: 'Категории настроек',
+    tabGeneral: 'Общие',
+    tabAppearance: 'Внешний вид',
+    tabPlayback: 'Воспроизведение',
+    tabExtensions: 'Расширения',
+    tabData: 'Данные',
     playbackAria: 'Настройки воспроизведения',
     autoplayNext: 'Автовоспроизведение следующей серии',
     autoplayNextDesc: 'Следующая серия запускается автоматически по окончании текущей.',
@@ -496,6 +525,9 @@ const ru: Overlay = {
     holdSpeedDesc: 'Скорость воспроизведения при удержании кадра.',
     subtitleSize: 'Размер субтитров',
     subtitleSizeDesc: 'Размер субтитров по умолчанию в плеере.',
+    subtitleSmall: 'Маленький',
+    subtitleMedium: 'Средний',
+    subtitleLarge: 'Большой',
     subtitleLanguage: 'Язык субтитров',
     subtitleLanguageDesc: 'Какие субтитры выбираются при открытии серии.',
     subtitleAuto: 'Язык приложения',
@@ -504,7 +536,6 @@ const ru: Overlay = {
     fillToggle: 'Заполнять экран',
     fillToggleDesc: 'Открывать плеер с масштабированием на весь экран, а не по кадру.',
 
-    contentHeading: 'Контент',
     contentAria: 'Настройки контента',
     titleLanguage: 'Язык названий',
     titleLanguageDesc: 'Какое название показывать для аниме.',
@@ -546,7 +577,6 @@ const ru: Overlay = {
     recentCleared: 'Недавние очищены.',
     settingsReset: 'Настройки сброшены.',
 
-    extensionsHeading: 'Расширения',
     extensionsAria: 'Настройки расширений',
     autoCheckUpdates: 'Проверять обновления при открытии',
     autoCheckUpdatesDesc: 'Обновлять манифесты репозиториев при открытии раздела расширений.',
@@ -554,4 +584,127 @@ const ru: Overlay = {
   },
 }
 
-export const mobileOverlay: Record<'en' | 'tr' | 'ru', Overlay> = { en, tr, ru }
+/**
+ * Español lives here and in `resources/es.ts`, both owned by this repo rather
+ * than by the shared pixiWeb bundle — see the note at the top of
+ * `resources/es.ts` before adding it to the sync manifest.
+ */
+const es: Overlay = {
+  status: {
+    running: 'En ejecución',
+    stopped: 'Detenido',
+    connecting: 'Conectando',
+    error: 'Error',
+    aria: 'Estado de la conexión: {{status}}',
+  },
+  extensions: {
+    repoAdd: 'Añadir repositorio',
+    repoFormTitle: 'Añadir un repositorio por URL',
+    repoUrlLabel: 'URL del manifiesto del repositorio',
+    repoUrlPlaceholder: 'https://ejemplo.com/repo/manifest.json',
+    repoFormNote:
+      'El manifiesto se descarga y se valida. Los proveedores que lista se instalan uno a uno.',
+    repoConfirm: 'Añadir el repositorio',
+    repoSection: 'Repositorios',
+    repoEmptyTitle: 'Sin repositorios',
+    repoEmptyDesc:
+      'Añade la URL del manifiesto de un repositorio para ver e instalar los proveedores que lista.',
+    repoDesc:
+      'Los repositorios agrupan varios proveedores detrás de una sola URL de manifiesto: añade uno e instala los proveedores que quieras.',
+    repoProviders_one: '{{count}} proveedor',
+    repoProviders_other: '{{count}} proveedores',
+    repoCount_one: '{{count}} repositorio',
+    repoCount_other: '{{count}} repositorios',
+    repoAdded: 'Se añadió el repositorio {{name}}.',
+    repoRemoved: 'Se eliminó el repositorio {{name}}.',
+    repoRemoveTitle: '¿Eliminar el repositorio?',
+    repoRemoveDesc:
+      '{{name}} se eliminará. Los proveedores que ya instalaste seguirán instalados.',
+    repoRefresh: 'Actualizar',
+    repoBack: 'Repositorios',
+    repoRefreshAria: 'Actualizar el repositorio {{name}}',
+    repoOpenAria: 'Abrir el repositorio {{name}}',
+    providerInstall: 'Instalar',
+    providerInstalled: 'Instalado',
+    providerInstalling: 'Instalando…',
+    providerInstallAll: 'Instalar todos',
+    providerInstallAria: 'Instalar el proveedor {{name}}',
+  },
+  settings: {
+    tabsAria: 'Categorías de ajustes',
+    tabGeneral: 'General',
+    tabAppearance: 'Apariencia',
+    tabPlayback: 'Reproducción',
+    tabExtensions: 'Extensiones',
+    tabData: 'Datos',
+    playbackAria: 'Ajustes de reproducción',
+    autoplayNext: 'Reproducir el siguiente episodio solo',
+    autoplayNextDesc: 'El siguiente episodio empieza solo cuando termina el actual.',
+    skipInterval: 'Intervalo de salto',
+    skipIntervalDesc: 'Cuánto avanza el doble toque y los botones de salto.',
+    holdSpeed: 'Velocidad al mantener pulsado',
+    holdSpeedDesc: 'Velocidad de reproducción mientras mantienes pulsada la imagen.',
+    subtitleSize: 'Tamaño de los subtítulos',
+    subtitleSizeDesc: 'Tamaño predeterminado de los subtítulos en el reproductor.',
+    subtitleSmall: 'Pequeño',
+    subtitleMedium: 'Mediano',
+    subtitleLarge: 'Grande',
+    subtitleLanguage: 'Idioma de los subtítulos',
+    subtitleLanguageDesc: 'Qué subtítulos se seleccionan al abrir un episodio.',
+    subtitleAuto: 'Idioma de la aplicación',
+    defaultVolume: 'Volumen predeterminado',
+    defaultVolumeDesc: 'Nivel de salida con el que se abre el reproductor.',
+    fillToggle: 'Llenar la pantalla',
+    fillToggleDesc: 'Abrir el reproductorAMPLIADO para llenar la pantalla en vez de ajustar el fotograma.',
+
+    contentAria: 'Ajustes de contenido',
+    titleLanguage: 'Idioma del título',
+    titleLanguageDesc: 'Qué título se muestra para un anime.',
+    titleEn: 'Inglés',
+    titleRomaji: 'Romaji',
+    titleNative: 'Japonés',
+    hideAdult: 'Ocultar el contenido para adultos',
+    hideAdultDesc: 'Oculta el hentai y los títulos para adultos de las listas.',
+
+    storageHeading: 'Almacenamiento',
+    storageAria: 'Almacenamiento',
+    clearCache: 'Limpiar los datos en caché',
+    clearCacheDesc:
+      'Elimina los metadatos y las carátulas de anime guardados en caché. No afecta a nada más.',
+    clearExtensionsData: 'Eliminar todas las extensiones',
+    clearExtensionsDataDesc: 'Elimina todas las extensiones y repositorios.',
+    cacheCleared: 'Se limpiaron los datos en caché.',
+    extensionsCleared: 'Se eliminaron todas las extensiones.',
+
+    dataHeading: 'Datos y privacidad',
+    dataAria: 'Datos y privacidad',
+    clearHistory: 'Borrar el historial de visualización',
+    clearHistoryDesc: 'Elimina cada episodio que viste y su progreso.',
+    clearMyList: 'Borrar Mi lista',
+    clearMyListDesc: 'Elimina todos los anime guardados en tu lista.',
+    clearRecent: 'Borrar los vistos recientemente',
+    clearRecentDesc: 'Elimina el historial de vistos recientemente.',
+    resetSettings: 'Restablecer los ajustes',
+    resetSettingsDesc:
+      'Devuelve todos los ajustes de la aplicación a sus valores predeterminados. El historial y la lista se conservan.',
+    confirmTitle: '¿Estás seguro?',
+    confirmClearHistory: 'Esto elimina todo el historial de visualización de este dispositivo.',
+    confirmClearMyList: 'Esto elimina todos los títulos de Mi lista.',
+    confirmClearRecent: 'Esto elimina tu lista de vistos recientemente.',
+    confirmClearCache: 'Esto elimina los metadatos en caché; se volverá a cargar desde la red.',
+    confirmClearExtensions: 'Esto desinstala todas las extensiones y repositorios.',
+    confirmReset: 'Esto devuelve todos los ajustes a sus valores predeterminados.',
+    historyCleared: 'Se borró el historial de visualización.',
+    myListCleared: 'Se borró Mi lista.',
+    recentCleared: 'Se borraron los vistos recientemente.',
+    settingsReset: 'Se restablecieron los ajustes.',
+
+    extensionsAria: 'Ajustes de extensiones',
+    autoCheckUpdates: 'Buscar actualizaciones al abrir',
+    autoCheckUpdatesDesc:
+      'Actualiza los manifiestos de los repositorios al abrir la página de Extensiones.',
+    manageRepos: 'Gestionar repositorios y proveedores',
+  },
+}
+
+export const mobileOverlay: Record<'en' | 'tr' | 'ru' | 'es', Overlay> = { en, tr, ru, es }
