@@ -46,14 +46,23 @@ export function ScreenLayout({
     : null
 
   if (!scroll) {
-    return <View style={[styles.body, padded && gutters, style]}>{children}</View>
+    return (
+      <View style={styles.body}>
+        {/*
+         * Tablet: cap the column and center it (the web's `mx-auto max-w-7xl`).
+         * The outer view still owns the full width so full-bleed surfaces keep
+         * their background edge to edge.
+         */}
+        <View style={[styles.centeredFill, padded && gutters, style]}>{children}</View>
+      </View>
+    )
   }
 
   return (
     <ScrollView
       ref={ref}
       style={styles.body}
-      contentContainerStyle={[styles.content, gutters, contentStyle]}
+      contentContainerStyle={[styles.content, styles.centered, gutters, contentStyle]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       contentInsetAdjustmentBehavior="never">
@@ -75,5 +84,28 @@ export function ScreenLayout({
 const styles = StyleSheet.create({
   body: { flex: 1 },
   bodyGrow: { flexGrow: 1 },
+  /**
+   * The centred content column: full width up to the cap, then centred. This is
+   * where a tablet stops stretching a phone layout edge to edge (the theme's
+   * `layout.contentMaxWidth`, previously defined but never applied).
+   *
+   * Used as a `contentContainerStyle`, so it must NOT carry `flex` — a content
+   * container with `flex: 1` would be pinned to the viewport and long pages
+   * would stop scrolling.
+   */
+  centered: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
+  /**
+   * The same centred column for the non-scrolling branch, which DOES have to
+   * fill the viewport: screens like Watch render a `flex: 1` body child next to
+   * a fixed-aspect player, and that child can only resolve against a parent of
+   * definite height. Without `flex: 1` here the column is content-sized and the
+   * body collapses to zero — only the player would be visible.
+   */
+  centeredFill: {
+    flex: 1,
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+  },
   content: { flexGrow: 1, gap: spacing.xxl, paddingBottom: spacing.xxl },
 })

@@ -19,6 +19,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 
 import type { JikanAnime } from '@/api/jikan/types'
 import { Button } from '@/components/ui/Button'
+import { pickTitle } from '@/lib/contentPreferences'
 import { formatDate, formatScore } from '@/lib/format'
 import { colors, fonts, radii, spacing, text } from '@/theme'
 
@@ -109,7 +110,7 @@ export const Hero = memo(function Hero({ anime, style, onPress, onWatchPress }: 
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const navigation = useContext(NavigationContainerRefContext)
 
-  const title = anime.title_english ?? anime.title
+  const title = pickTitle(anime)
   const synopsis =
     anime.synopsis?.replace(/\[Written by MAL Rewrite\]|\s+/g, ' ').trim() ?? ''
   const shortSynopsis =

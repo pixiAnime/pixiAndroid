@@ -19,9 +19,18 @@ const AUTO_NEXT_KEY = 'pixiandroid.player.autoNext'
 const SKIP_SECONDS_KEY = 'pixiandroid.player.skipSeconds'
 const HOLD_RATE_KEY = 'pixiandroid.player.holdRate'
 const VOLUME_KEY = 'pixiandroid.player.volume'
+const SUBTITLE_LANGUAGE_KEY = 'pixiandroid.player.subtitleLanguage'
+const FILL_MODE_KEY = 'pixiandroid.player.fillMode'
 
 /** Cue sizes the settings menu offers, smallest first. */
 export const SUBTITLE_SIZE_CYCLE: SubtitleSize[] = ['small', 'medium', 'large']
+
+/**
+ * The subtitle languages the auto-pick can be pinned to. `auto` follows the
+ * app's own language; the rest force a specific track language on open.
+ */
+export const SUBTITLE_LANGUAGE_CHOICES = ['auto', 'en', 'tr', 'ru'] as const
+export type SubtitleLanguagePref = (typeof SUBTITLE_LANGUAGE_CHOICES)[number]
 
 
 function read(key: string): string | null {
@@ -95,4 +104,28 @@ export function readVolume(): number {
 
 export function writeVolume(volume: number): void {
   write(VOLUME_KEY, String(volume))
+}
+
+/**
+ * Which subtitle language the player auto-selects on open — `auto` means
+ * "follow the app language" (`pixiandroid.player.subtitleLanguage`).
+ */
+export function readSubtitleLanguage(): SubtitleLanguagePref {
+  const value = read(SUBTITLE_LANGUAGE_KEY)
+  return (SUBTITLE_LANGUAGE_CHOICES as readonly string[]).includes(value ?? '')
+    ? (value as SubtitleLanguagePref)
+    : 'auto'
+}
+
+export function writeSubtitleLanguage(value: SubtitleLanguagePref): void {
+  write(SUBTITLE_LANGUAGE_KEY, value)
+}
+
+/** Default viewing mode: `false` fits the frame, `true` fills the screen. */
+export function readFillMode(): boolean {
+  return read(FILL_MODE_KEY) === 'true'
+}
+
+export function writeFillMode(value: boolean): void {
+  write(FILL_MODE_KEY, value ? 'true' : 'false')
 }

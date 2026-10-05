@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/Button'
 import { Chip, Skeleton } from '@/components/ui/Primitives'
 import { SelectField, type SelectOption } from '@/components/ui/SelectField'
 import { useBrowseAnime, useGenres } from '@/hooks/useAnimeData'
+import { filterAdult } from '@/lib/contentPreferences'
 import type { RootStackParamList } from '@/navigation/types'
 import { colors, fonts, radii, spacing, text } from '@/theme'
 
@@ -190,7 +191,7 @@ export function BrowsePage() {
   )
 
   const query = useBrowseAnime(queryFilters)
-  const results = query.data?.pages.flatMap((p) => p.items) ?? []
+  const results = filterAdult(query.data?.pages.flatMap((p) => p.items) ?? [])
 
   const genres = genresQuery.data ?? []
   const featured = genres.filter((g) => FEATURED_GENRES.includes(g.name))

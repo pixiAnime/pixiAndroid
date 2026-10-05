@@ -25,6 +25,7 @@ import {
 } from '@/hooks/useAnimeData'
 import type { RootStackParamList } from '@/navigation/types'
 import { selectContinueWatching, useHistoryStore } from '@/stores/historyStore'
+import { filterAdult, pickStoredTitle, type AdultFields } from '@/lib/contentPreferences'
 import { formatRelativeTime, padEpisode } from '@/lib/format'
 import { colors, fonts, radii, spacing, text } from '@/theme'
 
@@ -51,7 +52,11 @@ export function HomePage() {
     [historyEntries],
   )
 
-  const heroAnime = seasonNow.data?.data?.[0]
+  /** Drop adult-rated titles from every row when the preference is on. */
+  const visible = <T extends AdultFields>(items: T[] | undefined): T[] | undefined =>
+    items ? filterAdult(items) : undefined
+
+  const heroAnime = filterAdult(seasonNow.data?.data ?? [])[0]
 
   return (
     <ScreenLayout contentStyle={styles.page}>
@@ -102,7 +107,7 @@ export function HomePage() {
                 <SafeImage src={entry.posterUrl} alt="" aspectRatio={2 / 3} style={styles.continuePoster} />
                 <View style={styles.continueBody}>
                   <Text numberOfLines={1} style={styles.continueTitle}>
-                    {entry.titleEnglish ?? entry.title}
+                    {pickStoredTitle(entry)}
                   </Text>
                   <Text style={styles.continueEpisode}>
                     {t('common.episode', { num: padEpisode(entry.episode) })}
@@ -145,7 +150,7 @@ export function HomePage() {
       <AnimeSection
         title={t('home.rows.trending')}
         subtitle={t('home.subs.topAiring')}
-        items={trending.data?.data}
+        items={visible(trending.data?.data)}
         isLoading={trending.isLoading}
         error={trending.isError ? trending.error : null}
         onRetry={() => trending.refetch()}
@@ -159,7 +164,7 @@ export function HomePage() {
       <AnimeSection
         title={t('home.rows.popular')}
         subtitle={t('home.subs.byPopularity')}
-        items={popular.data?.data}
+        items={visible(popular.data?.data)}
         isLoading={popular.isLoading}
         error={popular.isError ? popular.error : null}
         onRetry={() => popular.refetch()}
@@ -167,28 +172,28 @@ export function HomePage() {
       <AnimeSection
         title={t('home.rows.topRated')}
         subtitle={t('home.subs.allTime')}
-        items={topRated.data?.data}
+        items={visible(topRated.data?.data)}
         isLoading={topRated.isLoading}
         error={topRated.isError ? topRated.error : null}
         onRetry={() => topRated.refetch()}
       />
       <AnimeSection
         title={t('home.rows.airing')}
-        items={airing.data?.items}
+        items={visible(airing.data?.items)}
         isLoading={airing.isLoading}
         error={airing.isError ? airing.error : null}
         onRetry={() => airing.refetch()}
       />
       <AnimeSection
         title={t('home.rows.thisSeason')}
-        items={thisSeason.data?.data}
+        items={visible(thisSeason.data?.data)}
         isLoading={thisSeason.isLoading}
         error={thisSeason.isError ? thisSeason.error : null}
         onRetry={() => thisSeason.refetch()}
       />
       <AnimeSection
         title={t('home.rows.upcoming')}
-        items={upcoming.data?.data}
+        items={visible(upcoming.data?.data)}
         isLoading={upcoming.isLoading}
         error={upcoming.isError ? upcoming.error : null}
         onRetry={() => upcoming.refetch()}
@@ -196,7 +201,7 @@ export function HomePage() {
       />
       <AnimeSection
         title={t('home.rows.recentlyUpdated')}
-        items={recentlyUpdated.data?.data}
+        items={visible(recentlyUpdated.data?.data)}
         isLoading={recentlyUpdated.isLoading}
         error={recentlyUpdated.isError ? recentlyUpdated.error : null}
         onRetry={() => recentlyUpdated.refetch()}

@@ -47,3 +47,38 @@ export function resolveResumePoint(saved: SavedProgress, duration: number): numb
   if (duration > 0 && position >= duration * (FINISHED_PERCENT / 100)) return 0
   return position
 }
+
+/** A live position captured when a source changed, tagged with its episode. */
+export interface CarriedPosition {
+  /** Episode the position belongs to; `null` when there is no episode context. */
+  episode: number | null
+  /** Position in seconds at the moment the source changed. */
+  position: number
+}
+
+/**
+ * The second to open a **new source of the same episode** at.
+ *
+ * Unlike `resolveResumePoint`, this is not a history resume: switching the
+ * provider mid-episode must keep the viewer exactly where they were, whatever
+ * that position is — the 5 s "false start" floor and the 95 % "finished"
+ * ceiling would both be wrong here, because the viewer is watching *now*.
+ *
+ * Two guards keep it honest: the carried position only applies to the episode
+ * it was captured for (an episode change must not inherit the previous one's
+ * second), and it is clamped inside a shorter replacement stream so a source
+ * that is trimmed cannot land past its own end.
+ *
+ * Returns `0` when there is nothing to carry.
+ */
+export function resolveCarriedPoint(
+  carried: CarriedPosition | null,
+  episode: number | null,
+  duration: number,
+): number {
+  if (!carried || carried.episode !== episode) return 0
+  const position = carried.position
+  if (!Number.isFinite(position) || position < 1) return 0
+  if (duration > 0 && position >= duration) return Math.max(0, duration - 1)
+  return position
+}

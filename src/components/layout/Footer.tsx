@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 
 import { SECONDARY_NAV } from '@/navigation/navItems'
 import { useShellNav } from '@/navigation/shell'
-import { colors, fonts, spacing } from '@/theme'
+import { colors, fonts, layout, spacing } from '@/theme'
 
 export function Footer() {
   const { navigate } = useShellNav()
@@ -53,7 +53,15 @@ export function Footer() {
 
 const styles = StyleSheet.create({
   footer: { marginTop: spacing.huge, borderTopWidth: 1, borderTopColor: colors.outlineVariant },
-  inner: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xl, gap: spacing.lg },
+  inner: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    gap: spacing.lg,
+    /** Tablet: same centred column as the page body. */
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+  },
   brandBlock: { gap: spacing.xs },
   wordmark: {
     fontFamily: fonts.monoSemibold,

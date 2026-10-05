@@ -1,24 +1,29 @@
 /**
  * Extensions — installation + management screen (spec §18–§22), the port of
- * `pixiWeb/src/pages/Extensions/Extensions.tsx`.
+ * `pixiWeb/src/pages/Extensions/Extensions.tsx`, plus the Android-only
+ * **repository** layer.
  *
- * Install flow: URL → download → evaluate in a transient sandbox → validate
- * manifest + API version → preview → user confirms → storage. Nothing
- * executes before validation, and the states (idle / downloading /
- * preview / error), the copy and the a11y labels are byte-for-byte the web's
- * i18n keys.
+ * Two install paths:
  *
- * What changed for native: the web downloads through the pixiClient bridge
- * and opens the offline dialog when the bridge is down. Android has neither
- * (native `fetch`, native sandbox), so `inspectExtension` is called directly
- * and the bridge-only offline banner has no counterpart here.
+ *  - **Provider (direct URL)** — the original flow: URL → download → evaluate
+ *    in a transient sandbox → validate → preview → confirm → storage.
+ *  - **Repository (manifest URL)** — enter a JSON manifest listing several
+ *    provider URLs; the repo appears in a Repositories section, tapping it
+ *    drills into its providers, and each provider installs through the exact
+ *    same `inspectExtension` validation as the direct path.
+ *
+ * Copy for the repository layer lives in the `mobileKeys` overlay
+ * (`@/i18n/mobile`).
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Animated, StyleSheet, Text, View, type TextStyle } from 'react-native'
 import {
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Info,
+  Layers,
   Loader2,
   PackageOpen,
   Puzzle,
@@ -46,12 +51,18 @@ import {
   type ExtensionRecord,
   type InspectedExtension,
 } from '@/extensions'
+import { inspectRepository, type InspectedRepository } from '@/extensions/repo/RepoLoader'
+import { useRepoRegistry } from '@/extensions/repo/RepoRegistry'
+import type { RepoProvider, RepoRecord } from '@/extensions/repo/types'
+import { readAutoCheckUpdates } from '@/lib/appSettings'
 import { localizeExtensionMessage } from '@/i18n'
+import { mobileKeys } from '@/i18n/mobile'
 import { colors, fonts, radii, spacing, text } from '@/theme'
 
 import '@/i18n'
 
 type InspectPhase = 'idle' | 'downloading' | 'preview'
+type FormMode = 'provider' | 'repo'
 
 interface UpdateState {
   status: 'checking' | 'available' | 'current' | 'error'
@@ -61,12 +72,6 @@ interface UpdateState {
 
 /* ------------------------------------------------------------ button glue */
 
-/**
- * `Button` styles its plain-string children itself; anything that carries an
- * icon has to reproduce the same face, size and colour by hand — on the web
- * `text-sm font-medium` + `[&_svg:not([class*='size-'])]:size-4` do it in CSS.
- * The tables below mirror `Button`'s own size/variant metrics exactly.
- */
 const TEXT_SIZE: Record<ButtonSize, TextStyle> = StyleSheet.create({
   default: { fontSize: 14 },
   xs: { fontSize: 12 },
@@ -85,14 +90,12 @@ const TONE_FG: Record<ButtonVariant, string> = {
   link: colors.foreground,
 }
 
-/** The same tone as a text style — RN widens `color`, icons want a `string`. */
 function toneStyle(variant: ButtonVariant): TextStyle {
   return { color: TONE_FG[variant] }
 }
 
 interface LBtnProps extends Omit<ButtonProps, 'children'> {
   label: string
-  /** Pre-built node from `ICONS` — colour already matches the variant's tone. */
   icon?: ReactNode
 }
 
@@ -140,13 +143,9 @@ function Spin({ size = 16, color = colors.mutedForeground }: { size?: number; co
 
 /* --------------------------------------------------------------- helpers */
 
-/**
- * Button icons, pre-sized like the web's `[&_svg]:size-4` / `size-3` /
- * `size-3.5` and coloured with the `TONE_FG` of the variant they ride on
- * (the web lets `currentColor` do that).
- */
 const ICONS = {
   add: <Puzzle size={16} color={colors.primaryForeground} strokeWidth={1.6} />,
+  addRepo: <Layers size={16} color={colors.primaryForeground} strokeWidth={1.6} />,
   validating: <Spin size={16} color={colors.primaryForeground} />,
   install: <Download size={16} color={colors.primaryForeground} strokeWidth={1.6} />,
   confirm: <CheckCircle2 size={14} color={colors.primaryForeground} strokeWidth={1.6} />,
@@ -155,6 +154,11 @@ const ICONS = {
   refresh: <RefreshCw size={12} color={colors.foreground} strokeWidth={1.6} />,
   remove: <Trash2 size={12} color={colors.foreground} strokeWidth={1.6} />,
   removeDestructive: <Trash2 size={16} color="#ffffff" strokeWidth={1.6} />,
+  repo: <Layers size={16} color={colors.mutedForeground} strokeWidth={1.6} />,
+  repoOpen: <ChevronRight size={16} color={colors.mutedForeground} strokeWidth={1.6} />,
+  back: <ChevronLeft size={14} color={colors.foreground} strokeWidth={1.6} />,
+  installSmall: <Download size={14} color={colors.primaryForeground} strokeWidth={1.6} />,
+  installed: <CheckCircle2 size={14} color={colors.statusRunning} strokeWidth={1.8} />,
 }
 
 function CapabilityBadges({ record }: { record: ExtensionRecord }) {
@@ -185,6 +189,11 @@ function metaLine(manifest: ExtensionManifest): string {
   return `${author} · v${version} · api ${apiVersion ?? '1'}`
 }
 
+function providerMeta(provider: RepoProvider): string {
+  const version = provider.version ? ` · v${provider.version}` : ''
+  return `${provider.author}${version}`
+}
+
 /* ------------------------------------------------------------------ page */
 
 export function ExtensionsPage() {
@@ -196,7 +205,13 @@ export function ExtensionsPage() {
   const setEnabled = useExtensionRegistry((s) => s.setEnabled)
   const remove = useExtensionRegistry((s) => s.remove)
 
-  const [formOpen, setFormOpen] = useState(false)
+  const repos = useRepoRegistry((s) => s.repos)
+  const reposHydrated = useRepoRegistry((s) => s.hydrated)
+  const addRepo = useRepoRegistry((s) => s.add)
+  const removeRepo = useRepoRegistry((s) => s.remove)
+  const refreshRepo = useRepoRegistry((s) => s.refresh)
+
+  const [formMode, setFormMode] = useState<FormMode | null>(null)
   const [url, setUrl] = useState('')
   const [phase, setPhase] = useState<InspectPhase>('idle')
   const [candidate, setCandidate] = useState<InspectedExtension | null>(null)
@@ -206,17 +221,51 @@ export function ExtensionsPage() {
   const [details, setDetails] = useState<ExtensionRecord | null>(null)
   const [removing, setRemoving] = useState<ExtensionRecord | null>(null)
 
+  /* repository form + drill-down */
+  const [repoUrl, setRepoUrl] = useState('')
+  const [repoPhase, setRepoPhase] = useState<InspectPhase>('idle')
+  const [repoCandidate, setRepoCandidate] = useState<InspectedRepository | null>(null)
+  const [repoError, setRepoError] = useState<string | null>(null)
+  const [openRepo, setOpenRepo] = useState<RepoRecord | null>(null)
+  const [removingRepo, setRemovingRepo] = useState<RepoRecord | null>(null)
+  const [refreshingRepo, setRefreshingRepo] = useState<string | null>(null)
+  const [installing, setInstalling] = useState<Record<string, boolean>>({})
+  const [providerErrors, setProviderErrors] = useState<Record<string, string>>({})
+
   useEffect(() => {
     useExtensionRegistry.getState().hydrate()
+    useRepoRegistry.getState().hydrate()
   }, [])
 
+  // Auto-check: refresh repository manifests once, when the setting is on and
+  // the repositories have hydrated. Guarded so it never loops on registry updates.
+  const autoChecked = useRef(false)
+  useEffect(() => {
+    if (autoChecked.current || !reposHydrated || repos.length === 0) return
+    if (!readAutoCheckUpdates()) {
+      autoChecked.current = true
+      return
+    }
+    autoChecked.current = true
+    for (const repo of repos) {
+      refreshRepo(repo.id).catch(() => undefined)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reposHydrated, repos.length])
+
   const resetForm = () => {
-    setFormOpen(false)
+    setFormMode(null)
     setUrl('')
     setPhase('idle')
     setCandidate(null)
     setFormError(null)
+    setRepoUrl('')
+    setRepoPhase('idle')
+    setRepoCandidate(null)
+    setRepoError(null)
   }
+
+  /* ---------------- provider install (direct URL) ---------------- */
 
   const handleInspect = async () => {
     setFormError(null)
@@ -261,6 +310,115 @@ export function ExtensionsPage() {
     resetForm()
   }
 
+  /* ---------------- repository install ---------------- */
+
+  const handleInspectRepo = async () => {
+    setRepoError(null)
+    setRepoCandidate(null)
+    setRepoPhase('downloading')
+    try {
+      const inspected = await inspectRepository(repoUrl)
+      setRepoCandidate(inspected)
+      setRepoPhase('preview')
+    } catch (err) {
+      const structured = toStructuredExtensionError(err)
+      setRepoError(structured.message)
+      setRepoPhase('idle')
+    }
+  }
+
+  const handleConfirmRepo = async () => {
+    if (!repoCandidate) return
+    try {
+      const record = await addRepo(repoCandidate.url)
+      setNotice(t(mobileKeys.repoAdded, { name: record.manifest.name }))
+      resetForm()
+      setOpenRepo(record)
+    } catch (err) {
+      setRepoError(toStructuredExtensionError(err).message)
+    }
+  }
+
+  const handleRemoveRepo = async () => {
+    if (!removingRepo) return
+    await removeRepo(removingRepo.id)
+    setNotice(t(mobileKeys.repoRemoved, { name: removingRepo.manifest.name }))
+    setRemovingRepo(null)
+    if (openRepo?.id === removingRepo.id) setOpenRepo(null)
+  }
+
+  const handleRefreshRepo = async (repo: RepoRecord) => {
+    setRefreshingRepo(repo.id)
+    try {
+      await refreshRepo(repo.id)
+    } catch (err) {
+      setNotice(toStructuredExtensionError(err).message)
+    } finally {
+      setRefreshingRepo(null)
+    }
+  }
+
+  const isProviderInstalled = (provider: RepoProvider): boolean =>
+    records.some((r) => r.id === provider.id || r.url === provider.url)
+
+  const installProvider = async (provider: RepoProvider) => {
+    setProviderErrors((prev) => {
+      const next = { ...prev }
+      delete next[provider.id]
+      return next
+    })
+    setInstalling((prev) => ({ ...prev, [provider.id]: true }))
+    try {
+      const inspected = await inspectExtension(provider.url)
+      const existing = records.find(
+        (r) => r.id === inspected.manifest.id || r.url === provider.url,
+      )
+      await upsert({
+        id: inspected.manifest.id,
+        url: inspected.url,
+        manifest: inspected.manifest,
+        capabilities: inspected.capabilities,
+        methods: inspected.methods,
+        source: inspected.source,
+        enabled: true,
+        installedAt: existing?.installedAt ?? Date.now(),
+        updatedAt: Date.now(),
+      })
+      setNotice(
+        existing
+          ? t('extensions.updatedX', {
+              name: inspected.manifest.name,
+              version: inspected.manifest.version,
+            })
+          : t('extensions.installedX', {
+              name: inspected.manifest.name,
+              version: inspected.manifest.version,
+            }),
+      )
+    } catch (err) {
+      setProviderErrors((prev) => ({
+        ...prev,
+        [provider.id]: toStructuredExtensionError(err).message,
+      }))
+    } finally {
+      setInstalling((prev) => {
+        const next = { ...prev }
+        delete next[provider.id]
+        return next
+      })
+    }
+  }
+
+  const installAll = async (repo: RepoRecord) => {
+    for (const provider of repo.manifest.providers) {
+      if (isProviderInstalled(provider)) continue
+      // Sequential: each install evaluates a module in the sandbox; one at a time.
+      await installProvider(provider)
+    }
+  }
+
+  /* ---------------- provider updates (installed list) ---------------- */
+
   const handleUpdateCheck = async (record: ExtensionRecord) => {
     setUpdates((prev) => ({ ...prev, [record.id]: { status: 'checking' } }))
     try {
@@ -296,10 +454,7 @@ export function ExtensionsPage() {
       } else {
         setUpdates((prev) => ({
           ...prev,
-          [record.id]: {
-            status: 'error',
-            message: t('extensions.updateNewer'),
-          },
+          [record.id]: { status: 'error', message: t('extensions.updateNewer') },
         }))
       }
     } catch (err) {
@@ -349,6 +504,115 @@ export function ExtensionsPage() {
         .join(', ')
     : ''
 
+  /* Repository drill-down replaces the whole page body when a repo is open. */
+  if (openRepo) {
+    const repo = repos.find((r) => r.id === openRepo.id) ?? openRepo
+    return (
+      <ScreenLayout contentStyle={styles.page}>
+        <View style={styles.drillHead}>
+          <LBtn
+            label={t(mobileKeys.repoBack)}
+            icon={ICONS.back}
+            variant="ghost"
+            size="sm"
+            onPress={() => setOpenRepo(null)}
+          />
+        </View>
+
+        <View style={styles.repoDetailHead}>
+          <View style={styles.repoIcon}>
+            <Layers size={22} color={colors.mutedForeground} strokeWidth={1.6} />
+          </View>
+          <View style={styles.repoDetailCopy}>
+            <Text accessibilityRole="header" style={styles.pageTitle}>
+              {repo.manifest.name}
+            </Text>
+            <Text style={styles.metaMono}>
+              {t(mobileKeys.repoProviders, { count: repo.manifest.providers.length })}
+              {repo.manifest.author ? ` · ${repo.manifest.author}` : ''}
+            </Text>
+            <Text numberOfLines={2} style={styles.desc}>
+              {repo.url}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <LBtn
+            label={t(mobileKeys.providerInstallAll)}
+            icon={ICONS.install}
+            size="sm"
+            onPress={() => installAll(repo)}
+          />
+          <LBtn
+            label={refreshingRepo === repo.id ? t('common.loading') : t(mobileKeys.repoRefresh)}
+            icon={refreshingRepo === repo.id ? ICONS.checking : ICONS.refresh}
+            variant="outline"
+            size="sm"
+            disabled={refreshingRepo === repo.id}
+            onPress={() => handleRefreshRepo(repo)}
+          />
+        </View>
+
+        {notice ? (
+          <Text accessibilityLiveRegion="polite" style={styles.notice}>
+            {notice}
+          </Text>
+        ) : null}
+
+        <View style={styles.cards}>
+          {repo.manifest.providers.map((provider) => {
+            const installed = isProviderInstalled(provider)
+            const busy = Boolean(installing[provider.id])
+            const error = providerErrors[provider.id]
+            return (
+              <View key={provider.id} style={styles.card}>
+                <SafeImage
+                  src={provider.icon}
+                  alt={t('common.iconAlt', { name: provider.name })}
+                  aspectRatio={1}
+                  style={styles.icon}
+                />
+                <View style={styles.cardBody}>
+                  <View style={styles.cardHead}>
+                    <View style={styles.cardTitles}>
+                      <Text style={styles.extTitle}>{provider.name}</Text>
+                      <Text style={styles.metaMono}>{providerMeta(provider)}</Text>
+                    </View>
+                    {installed ? (
+                      <Badge variant="secondary" textStyle={styles.installedBadge}>
+                        {t(mobileKeys.providerInstalled)}
+                      </Badge>
+                    ) : (
+                      <LBtn
+                        label={busy ? t(mobileKeys.providerInstalling) : t(mobileKeys.providerInstall)}
+                        icon={busy ? ICONS.validating : ICONS.installSmall}
+                        size="xs"
+                        disabled={busy}
+                        accessibilityLabel={t(mobileKeys.providerInstallAria, { name: provider.name })}
+                        onPress={() => installProvider(provider)}
+                      />
+                    )}
+                  </View>
+                  {provider.description ? (
+                    <Text numberOfLines={2} style={styles.desc}>
+                      {provider.description}
+                    </Text>
+                  ) : null}
+                  {error ? (
+                    <Text accessibilityRole="alert" style={styles.formError}>
+                      {localizeExtensionMessage(error, t)}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            )
+          })}
+        </View>
+      </ScreenLayout>
+    )
+  }
+
   return (
     <ScreenLayout contentStyle={styles.page}>
       {/* ---------------- header ---------------- */}
@@ -359,20 +623,23 @@ export function ExtensionsPage() {
           </Text>
           <Text style={styles.pageDesc}>{t('extensions.pageDesc')}</Text>
         </View>
-        {!formOpen ? (
-          <LBtn
-            label={t('extensions.add')}
-            icon={ICONS.add}
-            onPress={() => setFormOpen(true)}
-          />
+        {!formMode ? (
+          <View style={styles.headerActions}>
+            <LBtn label={t('extensions.add')} icon={ICONS.add} onPress={() => setFormMode('provider')} />
+            <LBtn
+              label={t(mobileKeys.repoAdd)}
+              icon={ICONS.addRepo}
+              variant="outline"
+              onPress={() => setFormMode('repo')}
+            />
+          </View>
         ) : null}
       </View>
 
-      {/* Connection status — the washed-out states explain why installs/playback may stall. */}
       {status !== 'running' ? <StatusBanner status={status} /> : null}
 
-      {/* ---------------- install form ---------------- */}
-      {formOpen ? (
+      {/* ---------------- provider form ---------------- */}
+      {formMode === 'provider' ? (
         <View style={styles.form}>
           <View style={styles.formHead}>
             <Text accessibilityRole="header" style={styles.sectionTitle}>
@@ -439,18 +706,80 @@ export function ExtensionsPage() {
               </View>
 
               <View style={styles.actions}>
-                <LBtn
-                  label={t('extensions.confirmInstall')}
-                  size="sm"
-                  icon={ICONS.confirm}
-                  onPress={() => handleConfirm()}
-                />
-                <LBtn
-                  label={t('extensions.discard')}
-                  variant="ghost"
-                  size="sm"
-                  onPress={resetForm}
-                />
+                <LBtn label={t('extensions.confirmInstall')} size="sm" icon={ICONS.confirm} onPress={() => handleConfirm()} />
+                <LBtn label={t('extensions.discard')} variant="ghost" size="sm" onPress={resetForm} />
+              </View>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* ---------------- repository form ---------------- */}
+      {formMode === 'repo' ? (
+        <View style={styles.form}>
+          <View style={styles.formHead}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              {t(mobileKeys.repoFormTitle)}
+            </Text>
+            <LBtn label={t('common.cancel')} variant="ghost" size="xs" onPress={resetForm} />
+          </View>
+
+          <View style={styles.formFields}>
+            <Input
+              accessibilityLabel={t(mobileKeys.repoUrlLabel)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={repoPhase !== 'downloading'}
+              keyboardType="url"
+              mono
+              onChangeText={setRepoUrl}
+              onSubmitEditing={() => handleInspectRepo()}
+              placeholder={t(mobileKeys.repoUrlPlaceholder)}
+              returnKeyType="done"
+              value={repoUrl}
+            />
+            <LBtn
+              label={repoPhase === 'downloading' ? t('extensions.validating') : t(mobileKeys.repoConfirm)}
+              icon={repoPhase === 'downloading' ? ICONS.validating : ICONS.addRepo}
+              disabled={repoPhase === 'downloading' || repoUrl.trim().length === 0}
+              onPress={() => handleInspectRepo()}
+            />
+          </View>
+
+          <Text style={styles.installNote}>{t(mobileKeys.repoFormNote)}</Text>
+
+          {repoError ? (
+            <Text accessibilityRole="alert" style={styles.formError}>
+              {localizeExtensionMessage(repoError, t)}
+            </Text>
+          ) : null}
+
+          {repoCandidate && repoPhase === 'preview' ? (
+            <View style={styles.preview}>
+              <View style={styles.previewHead}>
+                <View style={styles.repoIcon}>
+                  <Layers size={22} color={colors.mutedForeground} strokeWidth={1.6} />
+                </View>
+                <View style={styles.previewCopy}>
+                  <Text style={styles.extTitle}>{repoCandidate.manifest.name}</Text>
+                  <Text style={styles.metaMono}>
+                    {t(mobileKeys.repoProviders, { count: repoCandidate.manifest.providers.length })}
+                    {repoCandidate.manifest.author ? ` · ${repoCandidate.manifest.author}` : ''}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.providerList}>
+                {repoCandidate.manifest.providers.map((provider) => (
+                  <Text key={provider.id} numberOfLines={1} style={styles.providerListLine}>
+                    {`• ${provider.name}`}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.actions}>
+                <LBtn label={t(mobileKeys.repoConfirm)} size="sm" icon={ICONS.confirm} onPress={() => handleConfirmRepo()} />
+                <LBtn label={t('extensions.discard')} variant="ghost" size="sm" onPress={resetForm} />
               </View>
             </View>
           ) : null}
@@ -462,6 +791,83 @@ export function ExtensionsPage() {
           {notice}
         </Text>
       ) : null}
+
+      {/* ---------------- repositories ---------------- */}
+      <View accessibilityLabel={t(mobileKeys.repoSection)} style={styles.listSection}>
+        <View style={styles.listHead}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>
+            {t(mobileKeys.repoSection)}
+          </Text>
+          <Text style={styles.listCount}>
+            {reposHydrated ? t(mobileKeys.repoCount, { count: repos.length }) : t('common.loading')}
+          </Text>
+        </View>
+
+        {!reposHydrated ? (
+          <View style={styles.loadingPanel}>
+            <Spin size={16} />
+            <Text style={styles.loadingLabel}>{t('common.loading')}</Text>
+          </View>
+        ) : repos.length === 0 ? (
+          <EmptyState
+            icon={ICONS.repo}
+            title={t(mobileKeys.repoEmptyTitle)}
+            description={t(mobileKeys.repoEmptyDesc)}
+          />
+        ) : (
+          <View style={styles.cards}>
+            {repos.map((repo) => (
+              <View key={repo.id} style={styles.card}>
+                <View style={styles.repoIcon}>
+                  <Layers size={20} color={colors.mutedForeground} strokeWidth={1.6} />
+                </View>
+                <View style={styles.cardBody}>
+                  <View style={styles.cardHead}>
+                    <View style={styles.cardTitles}>
+                      <Text style={styles.extTitle}>{repo.manifest.name}</Text>
+                      <Text style={styles.metaMono}>
+                        {t(mobileKeys.repoProviders, { count: repo.manifest.providers.length })}
+                        {repo.manifest.author ? ` · ${repo.manifest.author}` : ''}
+                      </Text>
+                    </View>
+                    <LBtn
+                      label={t(mobileKeys.repoRefresh)}
+                      icon={refreshingRepo === repo.id ? ICONS.checking : ICONS.refresh}
+                      variant="ghost"
+                      size="xs"
+                      disabled={refreshingRepo === repo.id}
+                      accessibilityLabel={t(mobileKeys.repoRefreshAria, { name: repo.manifest.name })}
+                      onPress={() => handleRefreshRepo(repo)}
+                    />
+                  </View>
+
+                  <Text numberOfLines={1} style={styles.desc}>
+                    {repo.url}
+                  </Text>
+
+                  <View style={styles.actions}>
+                    <LBtn
+                      label={t(mobileKeys.repoSection)}
+                      icon={ICONS.repoOpen}
+                      variant="ghost"
+                      size="xs"
+                      accessibilityLabel={t(mobileKeys.repoOpenAria, { name: repo.manifest.name })}
+                      onPress={() => setOpenRepo(repo)}
+                    />
+                    <LBtn
+                      label={t('common.remove')}
+                      icon={ICONS.remove}
+                      variant="ghost"
+                      size="xs"
+                      onPress={() => setRemovingRepo(repo)}
+                    />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
 
       {/* ---------------- installed list ---------------- */}
       <View accessibilityLabel={t('extensions.installedList')} style={styles.listSection}>
@@ -505,9 +911,7 @@ export function ExtensionsPage() {
                       </View>
                       <Switch
                         value={record.enabled}
-                        accessibilityLabel={
-                          record.enabled ? t('extensions.enabled') : t('extensions.disabled')
-                        }
+                        accessibilityLabel={record.enabled ? t('extensions.enabled') : t('extensions.disabled')}
                         onValueChange={(next) => setEnabled(record.id, next)}
                       />
                     </View>
@@ -533,9 +937,7 @@ export function ExtensionsPage() {
                         variant="ghost"
                         size="xs"
                         icon={ICONS.details}
-                        accessibilityLabel={t('extensions.detailsForAria', {
-                          name: record.manifest.name,
-                        })}
+                        accessibilityLabel={t('extensions.detailsForAria', { name: record.manifest.name })}
                         onPress={() => setDetails(record)}
                       />
                       <LBtn
@@ -563,11 +965,7 @@ export function ExtensionsPage() {
                           {update.message ? localizeExtensionMessage(update.message, t) : null}
                         </Text>
                         {update.status === 'available' ? (
-                          <LBtn
-                            label={t('extensions.updateNow')}
-                            size="xs"
-                            onPress={() => applyUpdate(record)}
-                          />
+                          <LBtn label={t('extensions.updateNow')} size="xs" onPress={() => applyUpdate(record)} />
                         ) : null}
                       </View>
                     ) : null}
@@ -592,17 +990,11 @@ export function ExtensionsPage() {
         {details ? (
           <View style={styles.dialogBody}>
             <Text style={styles.detailRow}>{`${t('extensions.rowUrl')} ${details.url}`}</Text>
-            <Text style={styles.detailRow}>
-              {`${t('extensions.rowApi')} ${details.manifest.apiVersion ?? '1'}`}
-            </Text>
+            <Text style={styles.detailRow}>{`${t('extensions.rowApi')} ${details.manifest.apiVersion ?? '1'}`}</Text>
             <Text style={styles.detailRow}>{`${t('extensions.rowCaps')} ${detailCaps}`}</Text>
             <Text style={styles.detailRow}>{`${t('extensions.rowMethods')} ${detailMethods}`}</Text>
-            <Text style={styles.detailRow}>
-              {`${t('extensions.rowInstalled')} ${formatDate(details.installedAt)}`}
-            </Text>
-            <Text style={styles.detailRow}>
-              {`${t('extensions.rowUpdated')} ${formatDate(details.updatedAt)}`}
-            </Text>
+            <Text style={styles.detailRow}>{`${t('extensions.rowInstalled')} ${formatDate(details.installedAt)}`}</Text>
+            <Text style={styles.detailRow}>{`${t('extensions.rowUpdated')} ${formatDate(details.updatedAt)}`}</Text>
             <Text style={styles.detailRow}>
               {`${t('extensions.rowEnabled')} ${details.enabled ? t('common.yes') : t('common.no')}`}
             </Text>
@@ -613,7 +1005,7 @@ export function ExtensionsPage() {
         ) : null}
       </Dialog>
 
-      {/* ---------------- remove confirm ---------------- */}
+      {/* ---------------- remove provider confirm ---------------- */}
       <Dialog
         open={removing !== null}
         onClose={() => setRemoving(null)}
@@ -625,6 +1017,21 @@ export function ExtensionsPage() {
           variant="destructive"
           icon={ICONS.removeDestructive}
           onPress={() => handleRemove()}
+        />
+      </Dialog>
+
+      {/* ---------------- remove repository confirm ---------------- */}
+      <Dialog
+        open={removingRepo !== null}
+        onClose={() => setRemovingRepo(null)}
+        title={t(mobileKeys.repoRemoveTitle)}
+        description={t(mobileKeys.repoRemoveDesc, { name: removingRepo?.manifest.name ?? '' })}>
+        <LBtn label={t('common.cancel')} variant="ghost" onPress={() => setRemovingRepo(null)} />
+        <LBtn
+          label={t('common.remove')}
+          variant="destructive"
+          icon={ICONS.removeDestructive}
+          onPress={() => handleRemoveRepo()}
         />
       </Dialog>
     </ScreenLayout>
@@ -643,6 +1050,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   headerCopy: { gap: spacing.xs, flexShrink: 1 },
+  headerActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s1_5 },
   pageTitle: { ...text.pageHeading, color: colors.onSurface, fontSize: 20, lineHeight: 28, letterSpacing: -0.5 },
   pageDesc: { ...text.body, color: colors.mutedForeground, maxWidth: 672 },
   sectionTitle: { ...text.sectionTitle, color: colors.foreground },
@@ -663,12 +1071,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   formFields: { gap: spacing.sm },
-  installNote: {
-    fontFamily: fonts.mono,
-    fontSize: 10.4,
-    lineHeight: 17,
-    color: colors.mutedForeground,
-  },
+  installNote: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 17, color: colors.mutedForeground },
   formError: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.destructive },
   preview: {
     borderWidth: 1,
@@ -681,9 +1084,25 @@ const styles = StyleSheet.create({
   previewHead: { flexDirection: 'row', gap: spacing.md },
   previewCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
   icon: { width: 48, flexShrink: 0, borderRadius: radii.md, overflow: 'hidden' },
+  repoIcon: {
+    width: 48,
+    height: 48,
+    flexShrink: 0,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceContainerHighest,
+  },
   extTitle: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, color: colors.foreground },
   metaMono: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, color: colors.mutedForeground },
   desc: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.mutedForeground },
+  providerList: { gap: spacing.hair },
+  providerListLine: {
+    fontFamily: fonts.mono,
+    fontSize: 11.2,
+    lineHeight: 16,
+    color: colors.mutedForeground,
+  },
 
   /* notice + list */
   notice: { fontFamily: fonts.mono, fontSize: 12, lineHeight: 17, color: colors.mutedForeground },
@@ -709,7 +1128,7 @@ const styles = StyleSheet.create({
   loadingLabel: { fontFamily: fonts.mono, fontSize: 12, color: colors.mutedForeground },
   cards: { gap: spacing.md },
 
-  /* extension card */
+  /* card */
   card: {
     flexDirection: 'row',
     gap: spacing.lg,
@@ -728,20 +1147,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cardTitles: { flexShrink: 1, minWidth: 0 },
-  badges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   badgeMuted: { color: colors.mutedForeground },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
+  installedBadge: { color: colors.statusRunning },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xs },
   updateRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -753,6 +1162,11 @@ const styles = StyleSheet.create({
   },
   updateMsg: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.mutedForeground },
   updateError: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.destructive },
+
+  /* drill-down */
+  drillHead: { alignItems: 'flex-start' },
+  repoDetailHead: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  repoDetailCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
 
   /* dialogs */
   dialogBody: { flex: 1, gap: spacing.sm },

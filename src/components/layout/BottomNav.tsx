@@ -145,7 +145,13 @@ const styles = StyleSheet.create({
   /* No top rule: the tonal step to `surfaceContainer` is the whole edge, the
      way a Material navigation bar separates itself. */
   nav: { backgroundColor: colors.surfaceContainer },
-  row: { flexDirection: 'row' },
+  /* Tablet: the bar's background stays edge to edge; the destinations centre. */
+  row: {
+    flexDirection: 'row',
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
+  },
   item: {
     flex: 1,
     minHeight: layout.bottomNavHeight,

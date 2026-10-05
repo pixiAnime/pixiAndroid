@@ -13,6 +13,7 @@ import { test } from 'node:test'
 import {
   FINISHED_PERCENT,
   MIN_RESUME_SECONDS,
+  resolveCarriedPoint,
   resolveResumePoint,
 } from '../src/pages/Watch/player/resume.ts'
 
@@ -58,4 +59,34 @@ test('nonsense resolves to zero rather than throwing', () => {
   assert.equal(resolveResumePoint({ position: Number.NaN, percent: 10 }, 1440), 0)
   assert.equal(resolveResumePoint({ position: Number.POSITIVE_INFINITY, percent: 10 }, 1440), 0)
   assert.equal(resolveResumePoint({ position: -60, percent: 10 }, 1440), 0)
+})
+
+/* ------------------------------------------------------------------ */
+/* Switching source inside an episode                                  */
+/* ------------------------------------------------------------------ */
+
+test('switching source keeps the viewer exactly where they were', () => {
+  // No thresholds here: 8 s in is mid-watch, and 1439/1440 is still watching —
+  // a source switch must not restart either of them.
+  assert.equal(resolveCarriedPoint({ episode: 1, position: 8 }, 1, 1440), 8)
+  assert.equal(resolveCarriedPoint({ episode: 1, position: 1439 }, 1, 1440), 1439)
+})
+
+test('a carry from a different episode is refused', () => {
+  assert.equal(resolveCarriedPoint({ episode: 3, position: 754 }, 4, 1440), 0)
+  // No episode context on both sides is still a match (there is nothing to mix up).
+  assert.equal(resolveCarriedPoint({ episode: null, position: 754 }, null, 1440), 754)
+})
+
+test('a missing or trivial carry resolves to zero', () => {
+  assert.equal(resolveCarriedPoint(null, 1, 1440), 0)
+  assert.equal(resolveCarriedPoint({ episode: 1, position: 0 }, 1, 1440), 0)
+  assert.equal(resolveCarriedPoint({ episode: 1, position: 0.5 }, 1, 1440), 0)
+})
+
+test('a carry past the end of a shorter stream is clamped inside it', () => {
+  // The replacement provider is trimmed: 1300 s does not exist in a 1000 s file.
+  assert.equal(resolveCarriedPoint({ episode: 1, position: 1300 }, 1, 1000), 999)
+  // An unknown duration cannot clamp.
+  assert.equal(resolveCarriedPoint({ episode: 1, position: 1300 }, 1, 0), 1300)
 })

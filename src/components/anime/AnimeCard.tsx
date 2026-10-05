@@ -6,6 +6,8 @@ import { memo, useContext, useId } from 'react'
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { NavigationContainerRefContext } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
+
+import { pickTitle } from '@/lib/contentPreferences'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 
 import type { JikanAnime } from '@/api/jikan/types'
@@ -38,7 +40,7 @@ interface AnimeCardProps {
  */
 export const AnimeCard = memo(function AnimeCard({ anime, style, rank, priority, onPress }: AnimeCardProps) {
   const { t } = useTranslation()
-  const title = anime.title_english ?? anime.title
+  const title = pickTitle(anime)
   const navigation = useContext(NavigationContainerRefContext)
   const scrimId = `scrim${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   const poster = anime.images?.webp?.large_image_url ?? anime.images?.jpg?.large_image_url

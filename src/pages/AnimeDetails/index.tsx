@@ -43,6 +43,7 @@ import { DetailSkeleton, EmptyState, ErrorState, SectionSkeleton } from '@/compo
 import { Button } from '@/components/ui/Button'
 import { Chip, Separator } from '@/components/ui/Primitives'
 import { useAnimeCharacters, useAnimeDetail, useAnimeRecommendations } from '@/hooks/useAnimeData'
+import { pickTitle } from '@/lib/contentPreferences'
 import { formatDateRange, formatNumber, formatScore, padEpisode } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import { useHistoryStore } from '@/stores/historyStore'
@@ -126,7 +127,7 @@ export function AnimeDetailsPage() {
     )
   }
 
-  const title = anime.title_english ?? anime.title
+  const title = pickTitle(anime)
   const poster =
     anime.images?.webp?.large_image_url ?? anime.images?.jpg?.large_image_url ?? null
   const jpTitle = anime.title_japanese

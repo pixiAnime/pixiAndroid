@@ -74,6 +74,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
+    /** Tablet: keep the bar's contents in the same centred column as the page. */
+    width: '100%',
+    maxWidth: layout.contentMaxWidth,
+    alignSelf: 'center',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
   mark: {

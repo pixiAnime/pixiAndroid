@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAnimeSearch } from '@/hooks/useAnimeData'
 import { useDebouncedValue } from '@/hooks/useDebounce'
+import { filterAdult } from '@/lib/contentPreferences'
 import type { RootStackParamList } from '@/navigation/types'
 import { colors, fonts, spacing, text } from '@/theme'
 
@@ -62,7 +63,7 @@ export function SearchPage() {
   const trimmed = urlQuery.trim()
   const query = useAnimeSearch({ q: trimmed, limit: 24 }, trimmed.length > 0)
 
-  const results = query.data?.pages.flatMap((p) => p.items) ?? []
+  const results = filterAdult(query.data?.pages.flatMap((p) => p.items) ?? [])
   const isLoading = query.isLoading || query.isFetchingNextPage
   const showInitialSkeleton = query.isLoading && trimmed.length > 0
 

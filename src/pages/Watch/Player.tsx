@@ -69,6 +69,8 @@ import {
   View,
   type AccessibilityActionEvent,
   type GestureResponderEvent,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native'
 import Video, {
   SelectedTrackType,
@@ -103,12 +105,12 @@ import { TopBar } from './player/controls/TopBar'
 import { PlaybackFeedback, type FeedbackFlash } from './player/feedback/PlaybackFeedback'
 import { formatRate } from './player/format'
 import { readPlayhead, resetPlayhead, setPlayhead } from './player/playhead'
-import { resolveResumePoint } from './player/resume'
+import { resolveCarriedPoint, resolveResumePoint } from './player/resume'
 import { EpisodesSheet } from './player/sheet/EpisodesSheet'
 import { SettingsSheet, type CaptionEntry } from './player/sheet/SettingsSheet'
 import { ErrorState } from './player/states/ErrorState'
 import { LoadingState } from './player/states/LoadingState'
-import { readVolume, writeVolume } from './playerPrefs'
+import { readFillMode, readVolume, writeFillMode, writeVolume } from './playerPrefs'
 import { playerWord } from './playerWords'
 import type { SettingsPage } from './settingsMenu'
 import { cueMetrics, type SubtitleSize } from './subtitleScale'
@@ -216,6 +218,12 @@ export interface PlayerProps {
    * Absent means "start at zero", which is every non-history playback.
    */
   resume?: EpisodeProgress | null
+  /**
+   * Overrides the 16:9 surface box in the non-fullscreen case. The page passes
+   * a height-capped box in landscape so the picture never eats the whole
+   * viewport and the body below keeps room to scroll.
+   */
+  surfaceBox?: StyleProp<ViewStyle>
 }
 
 interface PrepTarget {
@@ -254,6 +262,7 @@ export function Player({
   onSubtitleDelayChange,
   onProgressChange,
   resume,
+  surfaceBox,
 }: PlayerProps) {
   const { t } = useTranslation()
   const videoRef = useRef<VideoRef>(null)
@@ -276,6 +285,13 @@ export function Player({
   const resumeRef = useRef<EpisodeProgress | null>(resume)
   /** Episode that armed value belongs to — what the effect below keys off. */
   const resumeEpisodeRef = useRef(episodeNav?.currentEpisode ?? null)
+  /**
+   * Position captured when the source changes inside one episode, so switching
+   * provider keeps the viewer's place instead of restarting at 00:00. Tagged
+   * with the episode it belongs to; the episode effect does not touch it, and
+   * `resolveCarriedPoint` refuses a carry from a different episode.
+   */
+  const carryRef = useRef<{ episode: number | null; position: number } | null>(null)
 
   const [prepError, setPrepError] = useState<string | null>(null)
   const [target, setTarget] = useState<PrepTarget | null>(null)
@@ -331,8 +347,12 @@ export function Player({
    * the level `muted` silences; unmuting restores whatever this holds.
    */
   const [volume, setVolume] = useState(() => readVolume())
-  /** false = fit the whole frame (`contain`), true = fill the screen (`cover`). */
-  const [fillMode, setFillMode] = useState(false)
+  /**
+   * false = fit the whole frame (`contain`), true = fill the screen (`cover`).
+   * Seeded from the persisted default (Settings → Playback) and written back on
+   * change, so the choice sticks across sessions.
+   */
+  const [fillMode, setFillMode] = useState(() => readFillMode())
   /** True while a press-and-hold is overriding the chosen rate with 2×. */
   const [boosting, setBoosting] = useState(false)
   /** Picture-in-picture is a window state Android owns; RNV reports it. */
@@ -412,6 +432,12 @@ export function Player({
   /* ---------------- per-source UI reset ---------------- */
 
   useEffect(() => {
+    // Capture where we are BEFORE the reset below zeroes it: a source switch
+    // inside the same episode must not cost the viewer their place. Tagged with
+    // the episode that is current for this commit (before the episode effect
+    // advances it), so an episode change cannot inherit the previous second.
+    const at = positionRef.current
+    carryRef.current = at >= 1 ? { episode: resumeEpisodeRef.current, position: at } : null
     // A new source starts exactly like the web: idle, no autoplay, empty clock.
     setUserPaused(true)
     // Position/duration/buffered live in the playhead store now, but the reset
@@ -979,7 +1005,13 @@ export function Player({
 
     const saved = resumeRef.current
     resumeRef.current = null
-    const at = saved ? resolveResumePoint(saved, duration) : 0
+    // A position carried from a source switch in the same episode (see the
+    // per-source reset effect). It is consumed here exactly once, like the
+    // history resume, and refused when it belongs to another episode.
+    const carried = carryRef.current
+    carryRef.current = null
+    let at = saved ? resolveResumePoint(saved, duration) : 0
+    if (at === 0) at = resolveCarriedPoint(carried, resumeEpisodeRef.current, duration)
     if (at > 0) {
       // Paused, so the frame the viewer comes back to *is* the resume point;
       // play continues from there (no autoplay, as everywhere else).
@@ -1039,6 +1071,12 @@ export function Player({
     [t],
   )
 
+  /** Persist the fit/fill choice the viewer makes in the settings sheet. */
+  const handleFillModeChange = useCallback((value: boolean) => {
+    setFillMode(value)
+    writeFillMode(value)
+  }, [])
+
   /* ---------------- render ---------------- */
 
   const surface = (
@@ -1047,7 +1085,7 @@ export function Player({
         // Gesture zones split the surface down the middle (see `zoneFor`).
         surfaceWidthRef.current = event.nativeEvent.layout.width
       }}
-      style={fullscreen ? styles.surfaceFull : styles.surface}>
+      style={fullscreen ? styles.surfaceFull : [styles.surface, surfaceBox]}>
       {target ? (
         <Video
           key={`${target.uri}|${target.attempt}`}
@@ -1244,7 +1282,7 @@ export function Player({
         onAutoNextChange={onAutoNextChange}
         onHoldRateChange={onHoldRateChange}
         onClose={closeSettings}
-        onFillModeChange={setFillMode}
+        onFillModeChange={handleFillModeChange}
         onInteract={revealControls}
         onPage={setSettingsPage}
         onRateChange={handleRateChange}

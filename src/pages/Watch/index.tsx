@@ -54,6 +54,7 @@ import { embeddedSubtitles, mergeSubtitles } from '@/extensions'
 import { useAnimeDetail } from '@/hooks/useAnimeData'
 import { prefetchEpisodes, useEpisodes } from '@/hooks/useEpisodes'
 import { localizeExtensionMessage } from '@/i18n'
+import { pickTitle } from '@/lib/contentPreferences'
 import { formatDate, padEpisode } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import {
@@ -69,6 +70,7 @@ import {
   readAutoNext,
   readHoldRate,
   readSkipSeconds,
+  readSubtitleLanguage,
   readSubtitleSize,
   writeAutoNext,
   writeHoldRate,
@@ -92,8 +94,27 @@ export function WatchPage() {
   const { t, i18n } = useTranslation()
   const route = useRoute<Route>()
   const navigation = useNavigation<Nav>()
-  const { width } = useWindowDimensions()
+  const { width, height } = useWindowDimensions()
   const fullscreen = useIsFullscreen()
+
+  /*
+   * The player is a locked 16:9 box in normal flow above the body `ScrollView`.
+   * In landscape the natural 16:9 height exceeds the viewport, so the `flex: 1`
+   * body gets ~0px and the page cannot scroll. Cap the picture to a share of
+   * the viewport height in landscape and let it keep its 16:9 ratio at that
+   * height, so the body below always keeps room to scroll.
+   */
+  const naturalPlayerHeight = Math.round(width * (9 / 16))
+  const cappedPlayerHeight =
+    width > height ? Math.min(naturalPlayerHeight, Math.round(height * 0.58)) : naturalPlayerHeight
+  const surfaceBox =
+    cappedPlayerHeight < naturalPlayerHeight
+      ? {
+          height: cappedPlayerHeight,
+          width: Math.round(cappedPlayerHeight * (16 / 9)),
+          alignSelf: 'center' as const,
+        }
+      : undefined
 
   const animeId = route.params.malId
   const episode = Math.max(1, route.params.episode || 1)
@@ -183,6 +204,12 @@ export function WatchPage() {
    * Re-read every render so the auto-pick below follows a language change.
    */
   const appLanguage = i18n.resolvedLanguage ?? i18n.language ?? 'en'
+  /**
+   * The language the auto-pick targets: the Settings → Playback preference when
+   * it is pinned, otherwise the app's own language (`auto`).
+   */
+  const preferredSubtitleLanguage =
+    readSubtitleLanguage() === 'auto' ? appLanguage : readSubtitleLanguage()
 
   // Pick the track the viewer is most likely to want: their own language
   // first, then whatever the provider flagged, then nothing — see
@@ -198,11 +225,11 @@ export function WatchPage() {
       current: activeSubtitle,
       manual: manualSubtitle.current,
       subtitles,
-      language: appLanguage,
+      language: preferredSubtitleLanguage,
     })
     if (__DEV__) {
       console.debug('[subs]', {
-        language: appLanguage,
+        language: preferredSubtitleLanguage,
         tracks: subtitles.map((sub) =>
           sub.format === 'ass' ? `${sub.language}:ass` : sub.language,
         ),
@@ -211,7 +238,7 @@ export function WatchPage() {
       })
     }
     setActiveSubtitle(next)
-  }, [subtitles, appLanguage, activeSubtitle])
+  }, [subtitles, preferredSubtitleLanguage, activeSubtitle])
 
   /**
    * Stop auto-picking the moment the viewer chooses for themselves. Without
@@ -315,7 +342,7 @@ export function WatchPage() {
     )
   }
 
-  const title = anime.title_english ?? anime.title
+  const title = pickTitle(anime)
   const currentEpData = episodes.find((entry) => entry.number === episode)
   const poster = anime.images?.webp?.large_image_url ?? anime.images?.jpg?.large_image_url ?? null
   const synopsis = anime.synopsis?.replace(/\[Written by MAL Rewrite\]/g, '').trim()
@@ -416,6 +443,7 @@ export function WatchPage() {
         resume={resume}
         skipSeconds={skipSeconds}
         source={selected ?? sources[0]}
+        surfaceBox={surfaceBox}
         subtitleDelay={subtitleDelay}
         subtitleSize={subtitleSize}
         subtitles={subtitles}

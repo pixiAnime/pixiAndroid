@@ -17,6 +17,7 @@ import { SafeImage } from '@/components/anime'
 import { VirtualListLayout } from '@/components/layout'
 import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/Button'
+import { pickStoredTitle } from '@/lib/contentPreferences'
 import { formatRelativeTime } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import { useFavoritesStore } from '@/stores/favoritesStore'
@@ -61,7 +62,7 @@ export function MyListPage() {
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={t('common.openAria', {
-              title: fav.titleEnglish ?? fav.title,
+              title: pickStoredTitle(fav),
             })}
             onPress={() => navigation.navigate('AnimeDetail', { malId: fav.animeId })}
             style={styles.posterButton}>
@@ -73,7 +74,7 @@ export function MyListPage() {
               accessibilityRole="link"
               onPress={() => navigation.navigate('AnimeDetail', { malId: fav.animeId })}>
               <Text numberOfLines={1} style={styles.rowTitle}>
-                {fav.titleEnglish ?? fav.title}
+                {pickStoredTitle(fav)}
               </Text>
             </Pressable>
 

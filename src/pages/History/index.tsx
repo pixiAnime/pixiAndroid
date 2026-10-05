@@ -23,6 +23,7 @@ import { VirtualListLayout } from '@/components/layout'
 import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
+import { pickStoredTitle } from '@/lib/contentPreferences'
 import { formatRelativeTime, padEpisode } from '@/lib/format'
 import type { RootStackParamList } from '@/navigation/types'
 import { selectContinueWatching, useHistoryStore } from '@/stores/historyStore'
@@ -101,7 +102,7 @@ export function HistoryPage() {
                 }
                 style={styles.titleLink}>
                 <Text numberOfLines={1} style={styles.rowTitle}>
-                  {entry.titleEnglish ?? entry.title}
+                  {pickStoredTitle(entry)}
                 </Text>
               </Pressable>
               <Button
