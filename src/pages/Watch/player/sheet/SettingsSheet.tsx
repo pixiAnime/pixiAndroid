@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next'
 import Slider from '@react-native-community/slider'
 import type { AudioTrack } from 'react-native-video'
 
+import { mobileKeys } from '@/i18n/mobile'
 import { colors, fonts, radii, spacing } from '@/theme'
 
 import { SettingsBack, SettingsRow } from '../controls/SettingsRow'
@@ -106,6 +107,12 @@ export interface SettingsSheetProps {
   onSubtitleSizeChange?: (size: SubtitleSize) => void
   subtitleDelay: number
   onSubtitleDelayChange?: (delay: number) => void
+
+  /**
+   * Hand the stream to another app. Absent when there is no source to hand
+   * over yet (prep still running), so the row exists only when it can work.
+   */
+  onOpenExternal?: () => void
 }
 
 export function SettingsSheet(props: SettingsSheetProps) {
@@ -141,6 +148,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
     onSubtitleSizeChange,
     subtitleDelay,
     onSubtitleDelayChange,
+    onOpenExternal,
   } = props
 
   const captionLabel = captionEntries.find((entry) => entry.key === activeSubtitleKey)?.label ?? ''
@@ -286,6 +294,17 @@ export function SettingsSheet(props: SettingsSheetProps) {
                   onAutoNextChange?.(!autoNext)
                 }}
                 trailing={autoNext ? playerWord('on') : t('player.off')}
+              />
+            ) : null}
+            {/* Last on the page: it does not change a setting, it leaves the
+                app — so it sits below everything that stays in here. */}
+            {onOpenExternal ? (
+              <SettingsRow
+                label={t(mobileKeys.openExternal)}
+                onPress={() => {
+                  interact()
+                  onOpenExternal()
+                }}
               />
             ) : null}
           </>

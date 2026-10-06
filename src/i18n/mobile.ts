@@ -82,6 +82,12 @@ export const mobileKeys = {
   skipOutroAction: 'settings.skipOutroAction',
   fillToggle: 'settings.fillToggle',
   fillToggleDesc: 'settings.fillToggleDesc',
+  openExternal: 'settings.openExternal',
+  externalHeadersTitle: 'settings.externalHeadersTitle',
+  externalHeadersBody: 'settings.externalHeadersBody',
+  externalTryAnyway: 'settings.externalTryAnyway',
+  externalNoPlayerTitle: 'settings.externalNoPlayerTitle',
+  externalNoPlayerBody: 'settings.externalNoPlayerBody',
 
   contentAria: 'settings.contentAria',
   titleLanguage: 'settings.titleLanguage',
@@ -127,6 +133,14 @@ export const mobileKeys = {
   autoCheckUpdates: 'settings.autoCheckUpdates',
   autoCheckUpdatesDesc: 'settings.autoCheckUpdatesDesc',
   manageRepos: 'settings.manageRepos',
+
+  /* In-app updater (header). */
+  updateButton: 'update.button',
+  updateDownloading: 'update.downloading',
+  updatePermTitle: 'update.permissionTitle',
+  updatePermBody: 'update.permissionBody',
+  updateFailedTitle: 'update.failedTitle',
+  updateFailedBody: 'update.failedBody',
 } as const
 
 type StatusOverlay = {
@@ -201,6 +215,12 @@ type SettingsOverlay = {
   skipOutroAction: string
   fillToggle: string
   fillToggleDesc: string
+  openExternal: string
+  externalHeadersTitle: string
+  externalHeadersBody: string
+  externalTryAnyway: string
+  externalNoPlayerTitle: string
+  externalNoPlayerBody: string
 
   contentAria: string
   titleLanguage: string
@@ -252,9 +272,29 @@ type Overlay = {
   status: StatusOverlay
   extensions: ExtensionsOverlay
   settings: SettingsOverlay
+  update: UpdateOverlay
+}
+
+/** The header's update button and the dialogs around installing a release. */
+type UpdateOverlay = {
+  button: string
+  downloading: string
+  permissionTitle: string
+  permissionBody: string
+  failedTitle: string
+  failedBody: string
 }
 
 const en: Overlay = {
+  update: {
+    button: 'Update to {{version}}',
+    downloading: 'Downloading update…',
+    permissionTitle: 'Allow app installs',
+    permissionBody:
+      'Android must allow pixiAndroid to install apps. Allow it for this app, then tap the update button again.',
+    failedTitle: 'Update failed',
+    failedBody: 'The update could not be downloaded. Check your connection and try again.',
+  },
   status: {
     running: 'Running',
     stopped: 'Stopped',
@@ -329,6 +369,13 @@ const en: Overlay = {
     skipOutroAction: 'Skip ending',
     fillToggle: 'Fill the screen',
     fillToggleDesc: 'Open the player zoomed to fill the screen instead of fitting the frame.',
+    openExternal: 'Open in external player',
+    externalHeadersTitle: 'Needs request headers',
+    externalHeadersBody:
+      'This source sends request headers an external player cannot, so it may fail to open.',
+    externalTryAnyway: 'Open anyway',
+    externalNoPlayerTitle: 'No external player',
+    externalNoPlayerBody: 'No app on this device can open this video.',
 
     contentAria: 'Content settings',
     titleLanguage: 'Title language',
@@ -378,6 +425,15 @@ const en: Overlay = {
 }
 
 const tr: Overlay = {
+  update: {
+    button: '{{version}} sürümüne güncelle',
+    downloading: 'Güncelleme indiriliyor…',
+    permissionTitle: 'Uygulama yükleme izni',
+    permissionBody:
+      "Android'in pixiAndroid'den uygulama yüklemeye izin vermesi gerekiyor. Bu uygulama için izin ver, sonra güncelleme düğmesine tekrar dokun.",
+    failedTitle: 'Güncelleme başarısız',
+    failedBody: 'Güncelleme indirilemedi. Bağlantını kontrol edip tekrar dene.',
+  },
   status: {
     running: 'Çalışıyor',
     stopped: 'Durduruldu',
@@ -452,6 +508,13 @@ const tr: Overlay = {
     skipOutroAction: 'Kapanışı atla',
     fillToggle: 'Ekranı doldur',
     fillToggleDesc: 'Çerçeveye sığdırmak yerine ekranı dolduracak şekilde aç.',
+    openExternal: 'Harici oynatıcıda aç',
+    externalHeadersTitle: 'İstek başlıkları gerekli',
+    externalHeadersBody:
+      'Bu kaynak, harici oynatıcının gönderemeyeceği istek başlıkları kullanıyor; açılamayabilir.',
+    externalTryAnyway: 'Yine de aç',
+    externalNoPlayerTitle: 'Harici oynatıcı yok',
+    externalNoPlayerBody: 'Bu cihazda bu videoyu açabilecek hiçbir uygulama yok.',
 
     contentAria: 'İçerik ayarları',
     titleLanguage: 'Başlık dili',
@@ -501,6 +564,15 @@ const tr: Overlay = {
 }
 
 const ru: Overlay = {
+  update: {
+    button: 'Обновить до {{version}}',
+    downloading: 'Загрузка обновления…',
+    permissionTitle: 'Разрешить установку приложений',
+    permissionBody:
+      'Android нужно разрешить pixiAndroid устанавливать приложения. Разрешите это для приложения и нажмите кнопку обновления ещё раз.',
+    failedTitle: 'Не удалось обновить',
+    failedBody: 'Не удалось скачать обновление. Проверьте соединение и попробуйте снова.',
+  },
   status: {
     running: 'Работает',
     stopped: 'Остановлено',
@@ -575,6 +647,13 @@ const ru: Overlay = {
     skipOutroAction: 'Пропустить эндинг',
     fillToggle: 'Заполнять экран',
     fillToggleDesc: 'Открывать плеер с масштабированием на весь экран, а не по кадру.',
+    openExternal: 'Открыть во внешнем плеере',
+    externalHeadersTitle: 'Нужны заголовки запроса',
+    externalHeadersBody:
+      'Источник отправляет заголовки запроса, которые внешний плеер передать не сможет — видео может не открыться.',
+    externalTryAnyway: 'Всё равно открыть',
+    externalNoPlayerTitle: 'Внешнего плеера нет',
+    externalNoPlayerBody: 'На этом устройстве нет приложения, способного открыть это видео.',
 
     contentAria: 'Настройки контента',
     titleLanguage: 'Язык названий',
@@ -630,6 +709,15 @@ const ru: Overlay = {
  * `resources/es.ts` before adding it to the sync manifest.
  */
 const es: Overlay = {
+  update: {
+    button: 'Actualizar a {{version}}',
+    downloading: 'Descargando la actualización…',
+    permissionTitle: 'Permitir instalación de apps',
+    permissionBody:
+      'Android debe permitir que pixiAndroid instale apps. Permítelo para esta app y toca el botón de actualización de nuevo.',
+    failedTitle: 'Error al actualizar',
+    failedBody: 'No se pudo descargar la actualización. Comprueba la conexión e inténtalo de nuevo.',
+  },
   status: {
     running: 'En ejecución',
     stopped: 'Detenido',
@@ -704,6 +792,13 @@ const es: Overlay = {
     skipOutroAction: 'Saltar final',
     fillToggle: 'Llenar la pantalla',
     fillToggleDesc: 'Abrir el reproductorAMPLIADO para llenar la pantalla en vez de ajustar el fotograma.',
+    openExternal: 'Abrir en un reproductor externo',
+    externalHeadersTitle: 'Necesita cabeceras de solicitud',
+    externalHeadersBody:
+      'Esta fuente envía cabeceras de solicitud que un reproductor externo no puede enviar, así que puede fallar al abrirla.',
+    externalTryAnyway: 'Abrir de todos modos',
+    externalNoPlayerTitle: 'Sin reproductor externo',
+    externalNoPlayerBody: 'Ninguna app de este dispositivo puede abrir este vídeo.',
 
     contentAria: 'Ajustes de contenido',
     titleLanguage: 'Idioma del título',

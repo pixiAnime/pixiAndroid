@@ -1,11 +1,13 @@
 /**
  * The in-player skip button.
  *
- * Sits above the dock, where a thumb already rests to reach the play controls,
- * and appears only while the playhead is inside an interval Aniskip knows
- * about. It is deliberately a floating pill rather than a dock control: the
- * dock's contents are fixed height, and a button that appears and disappears
- * there would shift everything next to it four times a second.
+ * Bottom-right, just clear of the dock: the thumb that reached up to pause is
+ * already on that side of the screen, and a centred pill sits on top of the
+ * play button's column. It appears only while the playhead is inside an
+ * interval Aniskip knows about, and it is deliberately a floating pill rather
+ * than a dock control: the dock's contents are fixed height, and a button that
+ * appears and disappears there would shift everything next to it four times a
+ * second.
  *
  * It subscribes to the playhead itself, exactly like the scrubber and the cue
  * overlay: `onProgress` fires four times a second and must not re-render the
@@ -71,10 +73,8 @@ function SkipButton({
 const styles = StyleSheet.create({
   host: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    right: spacing.lg,
     bottom: DOCK_CLEARANCE,
-    alignItems: 'center',
   },
   pill: {
     flexDirection: 'row',

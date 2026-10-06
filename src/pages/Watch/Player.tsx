@@ -59,6 +59,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   AppState,
   BackHandler,
@@ -92,8 +93,10 @@ import {
   type PlaybackTarget,
 } from '@/extensions'
 import { localizeExtensionMessage } from '@/i18n'
+import { mobileKeys } from '@/i18n/mobile'
 import { useFullscreenChrome } from '@/components/layout'
 import { enterFullscreen, exitFullscreen } from '@/platform/fullscreen'
+import { openInExternalPlayer } from '@/platform/external'
 import type { Episode } from '@/providers/episode'
 import type { SkipInterval } from '@/api/aniskip'
 import type { EpisodeProgress } from '@/stores/historyStore'
@@ -814,6 +817,39 @@ export function Player({
     [],
   )
 
+  /**
+   * "Open in external player" — the current target into the system's chooser,
+   * so the viewer picks their own app and this one never has to know which
+   * players exist. Pauses first: two players talking at once is the one
+   * outcome this must not produce.
+   *
+   * A source that travels with request headers gets a warning first. The app
+   * attaches them to the playlist *and* every segment (see the `<Video>` note
+   * at the top), an external player has no way to send them, and a stream that
+   * refuses them just looks broken — so the viewer decides, rather than being
+   * handed a URL that 403s with no explanation.
+   */
+  const openExternal = useCallback(() => {
+    const current = target
+    if (!current) return
+    const launch = () => {
+      setUserPaused(true)
+      openInExternalPlayer(current.uri).then((opened) => {
+        if (!opened) {
+          Alert.alert(t(mobileKeys.externalNoPlayerTitle), t(mobileKeys.externalNoPlayerBody))
+        }
+      })
+    }
+    if (Object.keys(current.headers ?? {}).length > 0) {
+      Alert.alert(t(mobileKeys.externalHeadersTitle), t(mobileKeys.externalHeadersBody), [
+        { style: 'cancel', text: t('common.cancel') },
+        { text: t(mobileKeys.externalTryAnyway), onPress: launch },
+      ])
+      return
+    }
+    launch()
+  }, [t, target])
+
   const toggleFullscreen = useCallback(() => {
     const next = !fullscreen
     closeSettings()
@@ -1343,6 +1379,7 @@ export function Player({
         onFillModeChange={handleFillModeChange}
         onInteract={revealControls}
         onPage={setSettingsPage}
+        onOpenExternal={target ? openExternal : undefined}
         onRateChange={handleRateChange}
         onSleepChange={handleSleepChange}
         onSkipSecondsChange={onSkipSecondsChange}

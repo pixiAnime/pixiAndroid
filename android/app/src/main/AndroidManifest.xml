@@ -1,6 +1,38 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      The in-app updater installs the APK it downloads. Play Store builds do
+      not carry this (they are never self-installing); sideloaded releases
+      need it, and the viewer still approves every install on the system
+      prompt — this only makes the prompt reachable.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
+      Android 11+ filters which other apps this one can even *see*. Without
+      these, `Intent.resolveActivity` answers null for every video player on
+      the device and "open in external player" always reports none installed.
+    -->
+    <queries>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:mimeType="video/*" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="http" />
+      </intent>
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+      </intent>
+      <!-- The installer the updater hands the downloaded APK to. -->
+      <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:mimeType="application/vnd.android.package.archive" />
+      </intent>
+    </queries>
 
     <application
       android:name=".MainApplication"
@@ -24,5 +56,21 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!--
+        The updater's APK, exposed as a content:// URI. Without this the
+        installer would hit FileUriExposedException (Android 7+) trying to read
+        a raw file:// path; authorities are per-applicationId so two installs
+        of the app can never fight over it.
+      -->
+      <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${applicationId}.fileprovider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+        <meta-data
+          android:name="android.support.FILE_PROVIDER_PATHS"
+          android:resource="@xml/file_paths" />
+      </provider>
     </application>
 </manifest>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Where the updater's APK lives while the system installer reads it.
+  `cache-path` maps to `Context.getCacheDir()` — the file the download writes
+  (`pixi-update.apk`). Scoped to this path, so nothing else in the app's files
+  can be handed out as a content URI.
+-->
+<paths>
+    <cache-path name="updates" path="." />
+</paths>

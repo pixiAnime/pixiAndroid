@@ -189,7 +189,7 @@ export function WatchPage() {
       ] as SkipKind[],
     [skipIntro, skipOutro],
   )
-  const skipTimes = useSkipTimes({
+  const skipIntervals = useSkipTimes({
     malId: anime?.mal_id ?? null,
     episode,
     episodeLength: episodeLengthSeconds(anime?.duration),
@@ -453,7 +453,7 @@ export function WatchPage() {
         activeSubtitleKey={activeSubtitle}
         autoNext={autoNext}
         autoSkip={autoSkip}
-        skipIntervals={skipTimes.intervals}
+        skipIntervals={skipIntervals}
         episodeNav={{
           currentEpisode: episode,
           episodes,

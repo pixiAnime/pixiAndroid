@@ -12,29 +12,30 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { parseSkipTimes, type SkipInterval } from '../src/api/aniskip/parse.ts'
+import { parseSkipTimes, skipTimesUrl, type SkipInterval } from '../src/api/aniskip/parse.ts'
 import {
   activeSkipInterval,
   episodeLengthSeconds,
   SKIP_LEAD_IN_SECONDS,
 } from '../src/pages/Watch/player/skipTimes.ts'
 
-function payload(data: unknown[], found = true): unknown {
-  return { statusCode: 200, result: { found, data } }
+/** The shape the live `GET /v1/skip-times/{malId}/{episode}` endpoint answers with. */
+function payload(results: unknown[], found = true): unknown {
+  return { statusCode: 200, found, results }
 }
 
 function entry(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    interval: { startTime: 65, endTime: 155 },
-    skipType: 'op',
-    skipId: 12345,
-    score: 90,
+    interval: { start_time: 65, end_time: 155 },
+    skip_type: 'op',
+    skip_id: 'bf98fb07-c8f8-4399-baa4-1579f03b7e90',
+    episode_length: 1500.04,
     ...overrides,
   }
 }
 
 function interval(overrides: Partial<SkipInterval> = {}): SkipInterval {
-  return { id: '1', kind: 'op', startTime: 65, endTime: 155, score: 90, ...overrides }
+  return { id: '1', kind: 'op', startTime: 65, endTime: 155, ...overrides }
 }
 
 /* ------------------------------- parsing ------------------------------- */
@@ -43,18 +44,22 @@ test('parses an opening and an ending', () => {
   const parsed = parseSkipTimes(
     payload([
       entry(),
-      entry({ skipType: 'ed', skipId: 999, interval: { startTime: 1200, endTime: 1290 } }),
+      entry({
+        skip_type: 'ed',
+        skip_id: 'b60b5bf4-7fc9-40e9-b178-71d2a4f0e6c9',
+        interval: { start_time: 1200, end_time: 1290 },
+      }),
     ]),
   )
   assert.equal(parsed.length, 2)
   assert.deepEqual(
-    parsed.map((i) => [i.kind, i.startTime, i.endTime, i.score]),
+    parsed.map((i) => [i.kind, i.startTime, i.endTime]),
     [
-      ['op', 65, 155, 90],
-      ['ed', 1200, 1290, 90],
+      ['op', 65, 155],
+      ['ed', 1200, 1290],
     ],
   )
-  assert.equal(parsed[0].id, '12345')
+  assert.equal(parsed[0].id, 'bf98fb07-c8f8-4399-baa4-1579f03b7e90')
 })
 
 test('found: false is an empty answer, not a failure', () => {
@@ -62,7 +67,7 @@ test('found: false is an empty answer, not a failure', () => {
 })
 
 test('unusable payloads come back empty', () => {
-  for (const raw of [null, undefined, 'nope', 42, {}, { result: {} }, { result: { data: 'no' } }]) {
+  for (const raw of [null, undefined, 'nope', 42, {}, { found: true }, { results: 'no' }]) {
     assert.deepEqual(parseSkipTimes(raw), [], `expected [] for ${JSON.stringify(raw)}`)
   }
 })
@@ -71,12 +76,12 @@ test('drops entries that cannot be acted on', () => {
   const parsed = parseSkipTimes(
     payload([
       'not an object',
-      entry({ interval: { startTime: '65', endTime: 155 } }), // non-numeric
-      entry({ interval: { startTime: 155, endTime: 65 } }), // backwards
-      entry({ interval: { startTime: 90, endTime: 90 } }), // empty
-      entry({ interval: { startTime: -5, endTime: 60 } }), // negative
-      entry({ skipType: 'recap' }), // a kind the player has no button for
-      entry({ skipType: 'mixed-op' }),
+      entry({ interval: { start_time: '65', end_time: 155 } }), // non-numeric
+      entry({ interval: { start_time: 155, end_time: 65 } }), // backwards
+      entry({ interval: { start_time: 90, end_time: 90 } }), // empty
+      entry({ interval: { start_time: -5, end_time: 60 } }), // negative
+      entry({ skip_type: 'recap' }), // a kind the player has no button for
+      entry({ skip_type: 'mixed-op' }),
       entry(), // the one good entry, kept
     ]),
   )
@@ -84,14 +89,32 @@ test('drops entries that cannot be acted on', () => {
   assert.equal(parsed[0].startTime, 65)
 })
 
-test('falls back to a synthetic id when skipId is missing', () => {
-  const parsed = parseSkipTimes(payload([entry({ skipId: undefined })]))
+test('falls back to a synthetic id when skip_id is missing', () => {
+  const parsed = parseSkipTimes(payload([entry({ skip_id: undefined })]))
   assert.equal(parsed[0].id, 'op:65')
 })
 
-test('a missing score is zero, not NaN', () => {
-  const parsed = parseSkipTimes(payload([entry({ score: undefined })]))
-  assert.equal(parsed[0].score, 0)
+/* -------------------------------- request ------------------------------- */
+
+test('the URL carries the episode segment — without it the endpoint 404s', () => {
+  const url = skipTimesUrl({ malId: 21, episode: 7 })
+  assert.equal(url.pathname, '/v1/skip-times/21/7')
+  assert.equal(url.searchParams.getAll('types').join(','), 'op,ed')
+  assert.equal(url.searchParams.get('episodeLength'), null)
+})
+
+test('a known episode length rides along, an unknown one is omitted', () => {
+  const known = skipTimesUrl({ malId: 21, episode: 1, episodeLength: 1440.4 })
+  assert.equal(known.searchParams.get('episodeLength'), '1440')
+  for (const bad of [undefined, 0, -1]) {
+    const url = skipTimesUrl({ malId: 21, episode: 1, episodeLength: bad })
+    assert.equal(url.searchParams.get('episodeLength'), null, `for ${String(bad)}`)
+  }
+})
+
+test('only the kinds the viewer allows are requested', () => {
+  const url = skipTimesUrl({ malId: 21, episode: 1, types: ['ed'] })
+  assert.deepEqual(url.searchParams.getAll('types'), ['ed'])
 })
 
 /* --------------------------- episode length --------------------------- */
