@@ -53,6 +53,8 @@ import { Separator, Skeleton } from '@/components/ui/Primitives'
 import { embeddedSubtitles, mergeSubtitles } from '@/extensions'
 import { useAnimeDetail } from '@/hooks/useAnimeData'
 import { prefetchEpisodes, useEpisodes } from '@/hooks/useEpisodes'
+import { useSkipTimes } from '@/hooks/useSkipTimes'
+import type { SkipKind } from '@/api/aniskip'
 import { localizeExtensionMessage } from '@/i18n'
 import { pickTitle } from '@/lib/contentPreferences'
 import { formatDate, padEpisode } from '@/lib/format'
@@ -68,7 +70,10 @@ import { colors, fonts, layout, radii, spacing, text } from '@/theme'
 import { EpisodeList } from './EpisodeList'
 import {
   readAutoNext,
+  readAutoSkip,
   readHoldRate,
+  readSkipIntro,
+  readSkipOutro,
   readSkipSeconds,
   readSubtitleLanguage,
   readSubtitleSize,
@@ -78,6 +83,7 @@ import {
   writeSubtitleSize,
 } from './playerPrefs'
 import { Player, ResolvingSource } from './Player'
+import { episodeLengthSeconds } from './player/skipTimes'
 import { SourceSelector } from './SourceSelector'
 import { SubtitleSelector } from './SubtitleSelector'
 import type { SubtitleSize } from './subtitleScale'
@@ -163,6 +169,33 @@ export function WatchPage() {
   const [autoNext, setAutoNext] = useState(() => readAutoNext())
   const [skipSeconds, setSkipSeconds] = useState(() => readSkipSeconds())
   const [holdRate, setHoldRate] = useState(() => readHoldRate())
+  // Read once per mount, like the other player prefs: the Settings screen owns
+  // writing them, and a page left open behind Settings re-reads on its next open.
+  const skipIntro = readSkipIntro()
+  const skipOutro = readSkipOutro()
+  const autoSkip = readAutoSkip()
+
+  /*
+   * Aniskip. The page owns the request — it is the one holding the MAL id and
+   * Jikan's per-episode length — and hands the player only the intervals it is
+   * allowed to offer. Turning both kinds off is what disables the feature, so
+   * there is no separate master switch to get out of step with the two.
+   */
+  const skipKinds = useMemo(
+    () =>
+      [
+        ...(skipIntro ? (['op'] as const) : []),
+        ...(skipOutro ? (['ed'] as const) : []),
+      ] as SkipKind[],
+    [skipIntro, skipOutro],
+  )
+  const skipTimes = useSkipTimes({
+    malId: anime?.mal_id ?? null,
+    episode,
+    episodeLength: episodeLengthSeconds(anime?.duration),
+    types: skipKinds,
+    enabled: sources.length > 0 && skipKinds.length > 0,
+  })
 
   const handleSubtitleSize = useCallback((size: SubtitleSize) => {
     setSubtitleSize(size)
@@ -419,6 +452,8 @@ export function WatchPage() {
       <Player
         activeSubtitleKey={activeSubtitle}
         autoNext={autoNext}
+        autoSkip={autoSkip}
+        skipIntervals={skipTimes.intervals}
         episodeNav={{
           currentEpisode: episode,
           episodes,

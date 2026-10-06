@@ -91,6 +91,19 @@ const VARIANTS: Record<ButtonVariant, { bg: string; fg: string; border: string }
   link: { bg: 'transparent', fg: colors.onSurface, border: 'transparent' },
 }
 
+/**
+ * The colour a variant paints its label in.
+ *
+ * `Button` renders icon children as-is, so a caller that draws an icon has to
+ * paint it in this colour too: a filled variant's foreground on an outline or
+ * ghost button is dark-on-dark and the glyph silently disappears. Exported so
+ * call sites derive it from the same table the button itself uses instead of
+ * keeping a second copy that drifts.
+ */
+export function buttonForeground(variant: ButtonVariant = 'default'): string {
+  return VARIANTS[variant].fg
+}
+
 const styles = StyleSheet.create({
   base: {
     flexDirection: 'row',

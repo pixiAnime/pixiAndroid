@@ -7,6 +7,7 @@
  * {
  *   "name": "Pixi Providers",
  *   "version": "1",
+ *   "icon": "https://…/repo.png",
  *   "providers": [
  *     {
  *       "id": "ayruki-auto",
@@ -174,6 +175,10 @@ export function validateRepoManifest(raw: unknown): RepoManifest {
   const manifest: RepoManifest = { name, providers }
   if (author) manifest.author = author
   if (version) manifest.version = version
+  // The repository's own artwork. Optional: manifests written before it had an
+  // icon still validate, and the UI falls back to a generic mark.
+  const icon = optionalHttpUrl(data.icon, 'icon')
+  if (icon) manifest.icon = icon
   return manifest
 }
 

@@ -95,6 +95,7 @@ import { localizeExtensionMessage } from '@/i18n'
 import { useFullscreenChrome } from '@/components/layout'
 import { enterFullscreen, exitFullscreen } from '@/platform/fullscreen'
 import type { Episode } from '@/providers/episode'
+import type { SkipInterval } from '@/api/aniskip'
 import type { EpisodeProgress } from '@/stores/historyStore'
 import { colors, fonts, spacing } from '@/theme'
 
@@ -110,6 +111,8 @@ import { EpisodesSheet } from './player/sheet/EpisodesSheet'
 import { SettingsSheet, type CaptionEntry } from './player/sheet/SettingsSheet'
 import { ErrorState } from './player/states/ErrorState'
 import { LoadingState } from './player/states/LoadingState'
+import { SkipPrompt } from './player/SkipButton'
+import { activeSkipInterval } from './player/skipTimes'
 import { readFillMode, readVolume, writeFillMode, writeVolume } from './playerPrefs'
 import { playerWord } from './playerWords'
 import type { SettingsPage } from './settingsMenu'
@@ -197,6 +200,16 @@ export interface PlayerProps {
   /** Asks the page for the next episode; absent = nowhere to go, so never fires. */
   onRequestNext?: () => void
   /**
+   * Aniskip intervals for this episode, already filtered by the page to the
+   * kinds this viewer allows. Empty or absent = the button never renders.
+   */
+  skipIntervals?: SkipInterval[]
+  /**
+   * Jump past the interval on our own instead of only offering the button.
+   * Off by default — see `readAutoSkip`.
+   */
+  autoSkip?: boolean
+  /**
    * In-player episode navigation (§2B) — the top bar's prev/next and the
    * episode sheet. Absent = no episode context, so neither renders.
    */
@@ -256,6 +269,8 @@ export function Player({
   autoNext = false,
   onAutoNextChange,
   onRequestNext,
+  skipIntervals,
+  autoSkip = false,
   episodeNav,
   label,
   onSubtitleChange,
@@ -379,6 +394,18 @@ export function Player({
    * changes four times a second).
    */
   const positionRef = useRef(0)
+  /**
+   * Aniskip intervals already jumped past in this episode, by id. Auto-skip
+   * fires from `onProgress`, which would otherwise re-trigger on every tick
+   * inside the interval; remembering the id makes the jump happen once.
+   */
+  const autoSkippedRef = useRef<Set<string>>(new Set())
+
+  // A new episode — or a late answer from Aniskip — starts with a clean slate,
+  // so episode 2's opening is not skipped because episode 1's id matched.
+  useEffect(() => {
+    autoSkippedRef.current = new Set()
+  }, [skipIntervals])
   /** The rate the viewer picked, so a hold can be undone back to it. */
   const rateRef = useRef(1)
   /** Surface width, to split a touch into "back" and "forward". */
@@ -671,6 +698,22 @@ export function Player({
     (delta: number) => {
       revealControls()
       seekTo(positionRef.current + delta)
+    },
+    [revealControls, seekTo],
+  )
+
+  /**
+   * The floating "Skip intro" / "Skip outro" pill.
+   *
+   * A manual skip is recorded in the same set auto-skip uses, so turning
+   * auto-skip on part-way through an opening does not immediately yank the
+   * viewer out of the interval they just chose to stay in.
+   */
+  const skipInterval = useCallback(
+    (interval: SkipInterval) => {
+      autoSkippedRef.current.add(interval.id)
+      revealControls()
+      seekTo(interval.endTime)
     },
     [revealControls, seekTo],
   )
@@ -1047,6 +1090,18 @@ export function Player({
     const at = data.currentTime || 0
     positionRef.current = at
     setPlayhead({ position: at, buffered: data.playableDuration || 0 })
+
+    // Aniskip auto-skip: the first tick inside an interval the viewer has not
+    // skipped yet jumps to its end. Recorded by id so the following ticks —
+    // and the tick right after the jump — do nothing.
+    if (autoSkip) {
+      const interval = activeSkipInterval(skipIntervals, at)
+      if (interval && !autoSkippedRef.current.has(interval.id)) {
+        autoSkippedRef.current.add(interval.id)
+        seekTo(interval.endTime)
+      }
+    }
+
     pushProgress(false, data.seekableDuration || 0)
   }
 
@@ -1226,6 +1281,9 @@ export function Player({
             : ''
         }
       />
+
+      {/* Aniskip: the opening/ending pill, whenever the playhead is in one. */}
+      <SkipPrompt intervals={skipIntervals} onSkip={skipInterval} />
 
       {/*
         The bottom dock: one gradient and the controls standing on it, fading

@@ -72,6 +72,14 @@ export const mobileKeys = {
   subtitleAuto: 'settings.subtitleAuto',
   defaultVolume: 'settings.defaultVolume',
   defaultVolumeDesc: 'settings.defaultVolumeDesc',
+  skipIntro: 'settings.skipIntro',
+  skipIntroDesc: 'settings.skipIntroDesc',
+  skipOutro: 'settings.skipOutro',
+  skipOutroDesc: 'settings.skipOutroDesc',
+  autoSkip: 'settings.autoSkip',
+  autoSkipDesc: 'settings.autoSkipDesc',
+  skipIntroAction: 'settings.skipIntroAction',
+  skipOutroAction: 'settings.skipOutroAction',
   fillToggle: 'settings.fillToggle',
   fillToggleDesc: 'settings.fillToggleDesc',
 
@@ -183,6 +191,14 @@ type SettingsOverlay = {
   subtitleAuto: string
   defaultVolume: string
   defaultVolumeDesc: string
+  skipIntro: string
+  skipIntroDesc: string
+  skipOutro: string
+  skipOutroDesc: string
+  autoSkip: string
+  autoSkipDesc: string
+  skipIntroAction: string
+  skipOutroAction: string
   fillToggle: string
   fillToggleDesc: string
 
@@ -303,6 +319,14 @@ const en: Overlay = {
     subtitleAuto: 'App language',
     defaultVolume: 'Default volume',
     defaultVolumeDesc: 'Output level the player opens at.',
+    skipIntro: 'Skip intros',
+    skipIntroDesc: 'Offer a button that jumps past the opening when one is known.',
+    skipOutro: 'Skip endings',
+    skipOutroDesc: 'Offer a button that jumps past the ending when one is known.',
+    autoSkip: 'Skip automatically',
+    autoSkipDesc: 'Jump past intros and endings on your own instead of showing a button.',
+    skipIntroAction: 'Skip intro',
+    skipOutroAction: 'Skip ending',
     fillToggle: 'Fill the screen',
     fillToggleDesc: 'Open the player zoomed to fill the screen instead of fitting the frame.',
 
@@ -418,6 +442,14 @@ const tr: Overlay = {
     subtitleAuto: 'Uygulama dili',
     defaultVolume: 'Varsayılan ses',
     defaultVolumeDesc: 'Oynatıcının açılış ses düzeyi.',
+    skipIntro: 'Açılışları atla',
+    skipIntroDesc: 'Açılış biliniyorsa onu geçen bir düğme gösterir.',
+    skipOutro: 'Kapanışları atla',
+    skipOutroDesc: 'Kapanış biliniyorsa onu geçen bir düğme gösterir.',
+    autoSkip: 'Kendiliğinden atla',
+    autoSkipDesc: 'Düğme göstermek yerine açılış ve kapanışları kendiliğinden geçer.',
+    skipIntroAction: 'Açılışı atla',
+    skipOutroAction: 'Kapanışı atla',
     fillToggle: 'Ekranı doldur',
     fillToggleDesc: 'Çerçeveye sığdırmak yerine ekranı dolduracak şekilde aç.',
 
@@ -533,6 +565,14 @@ const ru: Overlay = {
     subtitleAuto: 'Язык приложения',
     defaultVolume: 'Громкость по умолчанию',
     defaultVolumeDesc: 'Уровень громкости при открытии плеера.',
+    skipIntro: 'Пропуск опенинга',
+    skipIntroDesc: 'Показывать кнопку перехода через опенинг, если известны его границы.',
+    skipOutro: 'Пропуск эндинга',
+    skipOutroDesc: 'Показывать кнопку перехода через эндинг, если известны его границы.',
+    autoSkip: 'Пропускать автоматически',
+    autoSkipDesc: 'Переходить через опенинг и эндинг самому, без кнопки.',
+    skipIntroAction: 'Пропустить опенинг',
+    skipOutroAction: 'Пропустить эндинг',
     fillToggle: 'Заполнять экран',
     fillToggleDesc: 'Открывать плеер с масштабированием на весь экран, а не по кадру.',
 
@@ -654,6 +694,14 @@ const es: Overlay = {
     subtitleAuto: 'Idioma de la aplicación',
     defaultVolume: 'Volumen predeterminado',
     defaultVolumeDesc: 'Nivel de salida con el que se abre el reproductor.',
+    skipIntro: 'Saltar intros',
+    skipIntroDesc: 'Ofrece un botón para saltar la intro cuando se conoce su duración.',
+    skipOutro: 'Saltar finales',
+    skipOutroDesc: 'Ofrece un botón para saltar el final cuando se conoce su duración.',
+    autoSkip: 'Saltar automáticamente',
+    autoSkipDesc: 'Salta las intros y los finales por su cuenta en vez de mostrar un botón.',
+    skipIntroAction: 'Saltar intro',
+    skipOutroAction: 'Saltar final',
     fillToggle: 'Llenar la pantalla',
     fillToggleDesc: 'Abrir el reproductorAMPLIADO para llenar la pantalla en vez de ajustar el fotograma.',
 

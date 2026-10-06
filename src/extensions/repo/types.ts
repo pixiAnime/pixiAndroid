@@ -31,6 +31,8 @@ export interface RepoManifest {
   author?: string
   /** Repo manifest format version ("1"). */
   version?: string
+  /** https:// artwork for the repository itself, shown beside its name. */
+  icon?: string
   providers: RepoProvider[]
 }
 

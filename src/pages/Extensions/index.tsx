@@ -16,7 +16,7 @@
  * (`@/i18n/mobile`).
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Animated, StyleSheet, Text, View, type TextStyle } from 'react-native'
+import { Animated, Image, StyleSheet, Text, View, type TextStyle } from 'react-native'
 import {
   CheckCircle2,
   ChevronLeft,
@@ -36,7 +36,13 @@ import { SafeImage } from '@/components/anime'
 import { ScreenLayout } from '@/components/layout'
 import { EmptyState } from '@/components/states'
 import { Badge } from '@/components/ui/Badge'
-import { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from '@/components/ui/Button'
+import {
+  Button,
+  buttonForeground,
+  type ButtonProps,
+  type ButtonSize,
+  type ButtonVariant,
+} from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { StatusBanner } from '@/components/ui/Status'
@@ -81,32 +87,67 @@ const TEXT_SIZE: Record<ButtonSize, TextStyle> = StyleSheet.create({
   iconSm: { fontSize: 12 },
 })
 
-const TONE_FG: Record<ButtonVariant, string> = {
-  default: colors.primaryForeground,
-  outline: colors.foreground,
-  secondary: colors.secondaryForeground,
-  ghost: colors.foreground,
+const TONE_FG: Partial<Record<ButtonVariant, string>> = {
+  // The destructive fill is a saturated error red; the theme's `onError`
+  // (near-black) reads as muddy on it, so this page opts into white.
   destructive: '#ffffff',
-  link: colors.foreground,
+}
+
+/** Label and icon colour for a variant — both come from the button's table. */
+function toneColor(variant: ButtonVariant): string {
+  return TONE_FG[variant] ?? buttonForeground(variant)
 }
 
 function toneStyle(variant: ButtonVariant): TextStyle {
-  return { color: TONE_FG[variant] }
+  return { color: toneColor(variant) }
 }
 
 interface LBtnProps extends Omit<ButtonProps, 'children'> {
   label: string
-  icon?: ReactNode
+  /** Drawn in the variant's own foreground — see `ICONS` below. */
+  icon?: IconFactory
 }
 
 function LBtn({ label, icon, variant = 'default', size = 'default', ...rest }: LBtnProps) {
   return (
     <Button variant={variant} size={size} {...rest}>
-      {icon}
+      {icon ? icon(toneColor(variant)) : null}
       <Text numberOfLines={1} style={[styles.btnLabel, TEXT_SIZE[size], toneStyle(variant)]}>
         {label}
       </Text>
     </Button>
+  )
+}
+
+/**
+ * A repository's own artwork, or the stacked-layers mark when it has none.
+ *
+ * The manifest's `icon` is optional and points at a remote file that may be
+ * gone by the time the row is drawn, so this keeps its own failed state rather
+ * than leaning on `SafeImage` — whose fallback is the striped poster
+ * placeholder, which reads as "broken image" in a list of working rows.
+ * Repositories added before the manifest supported an icon land here too, and
+ * keep the mark they always had.
+ */
+function RepoAvatar({ icon, name, size = 20 }: { icon?: string; name: string; size?: number }) {
+  const { t } = useTranslation()
+  const [failed, setFailed] = useState(false)
+
+  return (
+    <View style={styles.repoIcon}>
+      {icon && !failed ? (
+        <Image
+          accessibilityLabel={t('common.iconAlt', { name })}
+          onError={() => setFailed(true)}
+          resizeMethod="resize"
+          resizeMode="cover"
+          source={{ uri: icon }}
+          style={styles.repoAvatar}
+        />
+      ) : (
+        <Layers color={colors.mutedForeground} size={size} strokeWidth={1.6} />
+      )}
+    </View>
   )
 }
 
@@ -143,23 +184,35 @@ function Spin({ size = 16, color = colors.mutedForeground }: { size?: number; co
 
 /* --------------------------------------------------------------- helpers */
 
+/**
+ * Button glyphs as factories.
+ *
+ * `Button` draws icon children exactly as handed to it, so a pre-baked colour
+ * is a trap: the icon that read fine on a filled button turns invisible the
+ * moment the same glyph is put on an outline or ghost one. Taking the colour
+ * as an argument lets `LBtn` paint every glyph in its variant's own
+ * foreground, which is what the label next to it uses.
+ */
+type IconFactory = (color: string) => ReactNode
+
 const ICONS = {
-  add: <Puzzle size={16} color={colors.primaryForeground} strokeWidth={1.6} />,
-  addRepo: <Layers size={16} color={colors.primaryForeground} strokeWidth={1.6} />,
-  validating: <Spin size={16} color={colors.primaryForeground} />,
-  install: <Download size={16} color={colors.primaryForeground} strokeWidth={1.6} />,
-  confirm: <CheckCircle2 size={14} color={colors.primaryForeground} strokeWidth={1.6} />,
-  details: <Info size={12} color={colors.foreground} strokeWidth={1.6} />,
-  checking: <Spin size={12} color={colors.foreground} />,
-  refresh: <RefreshCw size={12} color={colors.foreground} strokeWidth={1.6} />,
-  remove: <Trash2 size={12} color={colors.foreground} strokeWidth={1.6} />,
-  removeDestructive: <Trash2 size={16} color="#ffffff" strokeWidth={1.6} />,
-  repo: <Layers size={16} color={colors.mutedForeground} strokeWidth={1.6} />,
-  repoOpen: <ChevronRight size={16} color={colors.mutedForeground} strokeWidth={1.6} />,
-  back: <ChevronLeft size={14} color={colors.foreground} strokeWidth={1.6} />,
-  installSmall: <Download size={14} color={colors.primaryForeground} strokeWidth={1.6} />,
-  installed: <CheckCircle2 size={14} color={colors.statusRunning} strokeWidth={1.8} />,
-}
+  add: (color) => <Puzzle size={16} color={color} strokeWidth={1.6} />,
+  addRepo: (color) => <Layers size={16} color={color} strokeWidth={1.6} />,
+  validating: (color) => <Spin size={16} color={color} />,
+  install: (color) => <Download size={16} color={color} strokeWidth={1.6} />,
+  confirm: (color) => <CheckCircle2 size={14} color={color} strokeWidth={1.6} />,
+  details: (color) => <Info size={12} color={color} strokeWidth={1.6} />,
+  checking: (color) => <Spin size={12} color={color} />,
+  refresh: (color) => <RefreshCw size={12} color={color} strokeWidth={1.6} />,
+  remove: (color) => <Trash2 size={12} color={color} strokeWidth={1.6} />,
+  removeDestructive: (color) => <Trash2 size={16} color={color} strokeWidth={1.6} />,
+  repoOpen: (color) => <ChevronRight size={16} color={color} strokeWidth={1.6} />,
+  back: (color) => <ChevronLeft size={14} color={color} strokeWidth={1.6} />,
+  installSmall: (color) => <Download size={14} color={color} strokeWidth={1.6} />,
+} satisfies Record<string, IconFactory>
+
+/** Not a button — the empty-state mark, so it keeps a fixed muted tint. */
+const REPO_MARK = <Layers size={16} color={colors.mutedForeground} strokeWidth={1.6} />
 
 function CapabilityBadges({ record }: { record: ExtensionRecord }) {
   const { t } = useTranslation()
@@ -520,9 +573,7 @@ export function ExtensionsPage() {
         </View>
 
         <View style={styles.repoDetailHead}>
-          <View style={styles.repoIcon}>
-            <Layers size={22} color={colors.mutedForeground} strokeWidth={1.6} />
-          </View>
+          <RepoAvatar icon={repo.manifest.icon} name={repo.manifest.name} size={22} />
           <View style={styles.repoDetailCopy}>
             <Text accessibilityRole="header" style={styles.pageTitle}>
               {repo.manifest.name}
@@ -757,9 +808,11 @@ export function ExtensionsPage() {
           {repoCandidate && repoPhase === 'preview' ? (
             <View style={styles.preview}>
               <View style={styles.previewHead}>
-                <View style={styles.repoIcon}>
-                  <Layers size={22} color={colors.mutedForeground} strokeWidth={1.6} />
-                </View>
+                <RepoAvatar
+                  icon={repoCandidate.manifest.icon}
+                  name={repoCandidate.manifest.name}
+                  size={22}
+                />
                 <View style={styles.previewCopy}>
                   <Text style={styles.extTitle}>{repoCandidate.manifest.name}</Text>
                   <Text style={styles.metaMono}>
@@ -810,7 +863,7 @@ export function ExtensionsPage() {
           </View>
         ) : repos.length === 0 ? (
           <EmptyState
-            icon={ICONS.repo}
+            icon={REPO_MARK}
             title={t(mobileKeys.repoEmptyTitle)}
             description={t(mobileKeys.repoEmptyDesc)}
           />
@@ -818,9 +871,7 @@ export function ExtensionsPage() {
           <View style={styles.cards}>
             {repos.map((repo) => (
               <View key={repo.id} style={styles.card}>
-                <View style={styles.repoIcon}>
-                  <Layers size={20} color={colors.mutedForeground} strokeWidth={1.6} />
-                </View>
+                <RepoAvatar icon={repo.manifest.icon} name={repo.manifest.name} />
                 <View style={styles.cardBody}>
                   <View style={styles.cardHead}>
                     <View style={styles.cardTitles}>
@@ -1092,7 +1143,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceContainerHighest,
+    // Keeps the artwork from spilling past the rounded corners.
+    overflow: 'hidden',
   },
+  repoAvatar: { width: '100%', height: '100%' },
   extTitle: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, color: colors.foreground },
   metaMono: { fontFamily: fonts.mono, fontSize: 10.4, lineHeight: 15, color: colors.mutedForeground },
   desc: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 18, color: colors.mutedForeground },

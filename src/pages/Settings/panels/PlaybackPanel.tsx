@@ -17,7 +17,10 @@ import { usePreference } from '../usePreference'
 import { BOOST_CHOICES, SKIP_CHOICES } from '../../Watch/tapGestures'
 import {
   readAutoNext,
+  readAutoSkip,
   readHoldRate,
+  readSkipIntro,
+  readSkipOutro,
   readSkipSeconds,
   readSubtitleLanguage,
   readSubtitleSize,
@@ -25,7 +28,10 @@ import {
   SUBTITLE_LANGUAGE_CHOICES,
   SUBTITLE_SIZE_CYCLE,
   writeAutoNext,
+  writeAutoSkip,
   writeHoldRate,
+  writeSkipIntro,
+  writeSkipOutro,
   writeSkipSeconds,
   writeSubtitleLanguage,
   writeSubtitleSize,
@@ -55,6 +61,9 @@ export function PlaybackPanel({ resetKey }: { resetKey: number }) {
     resetKey,
   )
   const [volume, setVolume] = usePreference(readVolume, writeVolume, resetKey)
+  const [skipIntro, setSkipIntro] = usePreference(readSkipIntro, writeSkipIntro, resetKey)
+  const [skipOutro, setSkipOutro] = usePreference(readSkipOutro, writeSkipOutro, resetKey)
+  const [autoSkip, setAutoSkip] = usePreference(readAutoSkip, writeAutoSkip, resetKey)
 
   return (
     <Panel ariaLabel={t(mobileKeys.playbackAria)}>
@@ -115,6 +124,30 @@ export function PlaybackPanel({ resetKey }: { resetKey: number }) {
         format={(value) => `${Math.round(value * 100)}%`}
         onChange={setVolume}
       />
+
+      <SettingRow title={t(mobileKeys.skipIntro)} description={t(mobileKeys.skipIntroDesc)}>
+        <Switch
+          value={skipIntro}
+          accessibilityLabel={t(mobileKeys.skipIntro)}
+          onValueChange={setSkipIntro}
+        />
+      </SettingRow>
+
+      <SettingRow title={t(mobileKeys.skipOutro)} description={t(mobileKeys.skipOutroDesc)}>
+        <Switch
+          value={skipOutro}
+          accessibilityLabel={t(mobileKeys.skipOutro)}
+          onValueChange={setSkipOutro}
+        />
+      </SettingRow>
+
+      <SettingRow title={t(mobileKeys.autoSkip)} description={t(mobileKeys.autoSkipDesc)}>
+        <Switch
+          value={autoSkip}
+          accessibilityLabel={t(mobileKeys.autoSkip)}
+          onValueChange={setAutoSkip}
+        />
+      </SettingRow>
     </Panel>
   )
 }

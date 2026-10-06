@@ -21,6 +21,9 @@ const HOLD_RATE_KEY = 'pixiandroid.player.holdRate'
 const VOLUME_KEY = 'pixiandroid.player.volume'
 const SUBTITLE_LANGUAGE_KEY = 'pixiandroid.player.subtitleLanguage'
 const FILL_MODE_KEY = 'pixiandroid.player.fillMode'
+const SKIP_INTRO_KEY = 'pixiandroid.player.skipIntro'
+const SKIP_OUTRO_KEY = 'pixiandroid.player.skipOutro'
+const AUTO_SKIP_KEY = 'pixiandroid.player.autoSkip'
 
 /** Cue sizes the settings menu offers, smallest first. */
 export const SUBTITLE_SIZE_CYCLE: SubtitleSize[] = ['small', 'medium', 'large']
@@ -130,4 +133,39 @@ export function readFillMode(): boolean {
 
 export function writeFillMode(value: boolean): void {
   write(FILL_MODE_KEY, value ? 'true' : 'false')
+}
+
+/**
+ * Aniskip — skip the opening / the ending. Both default on: the button is
+ * there when the service knows a timestamp and stays out of the way otherwise,
+ * so leaving them on costs the viewer nothing. Turning both off is also how
+ * the feature is switched off without a separate master switch.
+ */
+export function readSkipIntro(): boolean {
+  return read(SKIP_INTRO_KEY) !== 'false'
+}
+
+export function writeSkipIntro(value: boolean): void {
+  write(SKIP_INTRO_KEY, value ? 'true' : 'false')
+}
+
+export function readSkipOutro(): boolean {
+  return read(SKIP_OUTRO_KEY) !== 'false'
+}
+
+export function writeSkipOutro(value: boolean): void {
+  write(SKIP_OUTRO_KEY, value ? 'true' : 'false')
+}
+
+/**
+ * Jump past the interval on its own instead of offering a button. Off by
+ * default: skipping without being asked is a strong opinion about someone's
+ * evening, and the button already covers the impatient case.
+ */
+export function readAutoSkip(): boolean {
+  return read(AUTO_SKIP_KEY) === 'true'
+}
+
+export function writeAutoSkip(value: boolean): void {
+  write(AUTO_SKIP_KEY, value ? 'true' : 'false')
 }

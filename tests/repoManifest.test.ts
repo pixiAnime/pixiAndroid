@@ -124,6 +124,26 @@ test('rejects an invalid icon URL', () => {
   )
 })
 
+test('keeps the repository icon when the manifest declares one', () => {
+  const manifest = validateRepoManifest(base({ icon: 'https://example.com/repo.png' }))
+  assert.equal(manifest.icon, 'https://example.com/repo.png')
+})
+
+test('a manifest without a repository icon still validates', () => {
+  // Repositories added before the schema grew an icon must keep working; the
+  // UI falls back to the generic mark rather than refusing the manifest.
+  const manifest = validateRepoManifest(base())
+  assert.equal(manifest.icon, undefined)
+  assert.equal('icon' in manifest, false)
+})
+
+test('rejects a non-http repository icon', () => {
+  throwsWith(
+    base({ icon: 'ftp://example.com/repo.png' }),
+    'The repository manifest "icon" must be a valid http(s) URL.',
+  )
+})
+
 test('rejects a manifest with too many providers', () => {
   const providers = Array.from({ length: 201 }, (_, i) => ({
     name: `P${i}`,
